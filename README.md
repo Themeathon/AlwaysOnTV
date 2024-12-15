@@ -1,6 +1,6 @@
 # Always On TV - Frontend
 
-This is the frontend component of the Always On TV project. It provides the user interface for the application. For the backend code, please refer to the [AlwaysOnTV/AlwaysOnTV-Backend](https://github.com/AlwaysOnTV/AlwaysOnTV-Backend) repository.
+This is the frontend component of the Always On TV project. It provides the user interface for the application. For the backend code, please refer to the [Themeathon/AlwaysOnTV-Backend](https://github.com/Themeathon/AlwaysOnTV-Backend) repository.
 
 ## Installation
 
@@ -34,7 +34,7 @@ This command will create an optimized and minified version of the code, suitable
 
 ## Usage with AlwaysOnTV-Backend
 
-For the full functionality of the Always On TV project, it is recommended to use this frontend in combination with the backend. You can find the backend repository at [AlwaysOnTV/AlwaysOnTV-Backend](https://github.com/AlwaysOnTV/AlwaysOnTV-Backend).
+For the full functionality of the Always On TV project, it is recommended to use this frontend in combination with the backend. You can find the backend repository at [Themeathon/AlwaysOnTV-Backend](https://github.com/Themeathon/AlwaysOnTV-Backend).
 
 Ensure that the backend is up and running and properly configured to establish communication between the frontend and backend components.
 
