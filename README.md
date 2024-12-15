@@ -1,6 +1,6 @@
 # Always On TV - Backend
 
-This is the backend component of the Always On TV project. It provides the necessary functionality to run two web servers on ports 8085 and 8086. Please note that the port numbers can be configured according to your needs. For the frontend code, please refer to the [AlwaysOnTV/AlwaysOnTV-Frontend](https://github.com/AlwaysOnTV/AlwaysOnTV-Frontend) repository.
+This is the backend component of the Always On TV project. It provides the necessary functionality to run two web servers on ports 8085 and 8086. Please note that the port numbers can be configured according to your needs. For the frontend code, please refer to the [AlwaysOnTV/AlwaysOnTV-Frontend](https://github.com/Themeathon/AlwaysOnTV-Frontend) repository.
 
 ## Installation
 
@@ -28,7 +28,7 @@ By default, the backend generates a `config.json` file with default configuratio
 
 ## Usage with AlwaysOnTV-Frontend
 
-For the best experience, it is recommended to use this backend in combination with the [AlwaysOnTV-Frontend](https://github.com/AlwaysOnTV/AlwaysOnTV-Frontend) project. The frontend component provides the user interface and interacts with the backend to display content on the Always On TV screens.
+For the best experience, it is recommended to use this backend in combination with the [AlwaysOnTV-Frontend](https://github.com/Themeathon/AlwaysOnTV-Frontend) project. The frontend component provides the user interface and interacts with the backend to display content on the Always On TV screens.
 
 Please refer to the documentation of the frontend project for instructions on how to set it up and integrate it with the backend.
 
