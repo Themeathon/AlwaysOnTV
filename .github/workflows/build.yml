@@ -22,7 +22,7 @@ jobs:
       - name: Fetch frontend repository
         uses: actions/checkout@v3
         with:
-          repository: AlwaysOnTV/AlwaysOnTV-Frontend
+          repository: Themeathon/AlwaysOnTV-Frontend
           ref: main
           path: frontend
           token: ${{ secrets.AOTV_TOKEN }}
@@ -36,7 +36,7 @@ jobs:
       - name: Fetch backend repository
         uses: actions/checkout@v3
         with:
-          repository: AlwaysOnTV/AlwaysOnTV-Backend
+          repository: Themeathon/AlwaysOnTV-Backend
           ref: main
           path: backend
           token: ${{ secrets.AOTV_TOKEN }}
