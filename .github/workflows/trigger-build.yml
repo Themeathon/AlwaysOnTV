@@ -32,6 +32,6 @@ jobs:
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.AOTV_TOKEN }}
-          repository: AlwaysOnTV/AlwaysOnTV
+          repository: Themeathon/AlwaysOnTV
           event-type: build
           client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "version": "${{ steps.get-version.outputs.version }}"}'
