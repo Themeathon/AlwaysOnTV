@@ -4,7 +4,7 @@ export default class AbstractRouter {
 	}
 
 	getRouter (Router) {
-		this.setupRouter(Router(this.options));
+		this.setupRouter(new Router(this.options));
 
 		return {
 			routes: this.router.routes(),
