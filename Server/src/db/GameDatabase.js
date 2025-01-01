@@ -23,6 +23,7 @@ class GameDatabase extends AbstractDatabase {
 
 		// Add a default game
 		await this.createGame('499973', 'Always On', 'https://static-cdn.jtvnw.net/ttv-boxart/499973-500x700.jpg');
+		await this.createGame('27284', 'Retro', 'https://static-cdn.jtvnw.net/ttv-boxart/27284-144x192.jpg');
 	}
 
 	getDefaultGameID () {
