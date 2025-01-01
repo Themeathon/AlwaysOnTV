@@ -1,0 +1,37 @@
+name: Trigger Combined Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger-combined-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Backend Repository
+        uses: actions/checkout@v3
+
+      - name: Check commit message
+        id: check-commit
+        run: |
+          MESSAGE=$(git log --format=%B -n 1 ${{ github.sha }})
+          if [[ $MESSAGE =~ \[(release|build)\]$ ]]; then
+            echo "trigger=true" >> $GITHUB_OUTPUT
+          else
+            echo "Commit message does include [release] or [build]."
+            exit 1
+          fi
+
+      - name: Get version from package.json
+        id: get-version
+        run: echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Send repository_dispatch event
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.AOTV_TOKEN }}
+          repository: Themeathon/AlwaysOnTV
+          event-type: build
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "version": "${{ steps.get-version.outputs.version }}"}'
