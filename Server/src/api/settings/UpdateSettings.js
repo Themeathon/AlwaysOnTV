@@ -19,6 +19,8 @@ class UpdateSettings extends AbstractEndpoint {
 				use_random_playlist: Joi.bool(),
 				use_entire_random_playlist: Joi.bool(),
 				max_video_quality: Joi.number().allow(360, 480, 720, 1080, 1440, 2160),
+				twitch_ad_duration: Joi.number().allow(30, 60, 90, 120, 150, 180),
+				twitch_ad_interval: Joi.number().allow(15, 30, 45, 60),
 			}).or(
 				'twitch_enabled',
 				'client_id',
@@ -27,6 +29,8 @@ class UpdateSettings extends AbstractEndpoint {
 				'use_random_playlist',
 				'use_entire_random_playlist',
 				'max_video_quality',
+				'twitch_ad_duration',
+				'twitch_ad_interval'
 			),
 		});
 	}
@@ -41,6 +45,8 @@ class UpdateSettings extends AbstractEndpoint {
 				use_random_playlist,
 				use_entire_random_playlist,
 				max_video_quality,
+				twitch_ad_duration,
+				twitch_ad_interval,
 			} = ctx.request.body;
 
 			TwitchConfig.isEnabled = twitch_enabled;
@@ -51,6 +57,8 @@ class UpdateSettings extends AbstractEndpoint {
 			Config.useRandomPlaylist = use_random_playlist;
 			Config.useEntireRandomPlaylist = use_entire_random_playlist;
 			Config.maxVideoQuality = max_video_quality;
+			Config.twitchAdDuration = twitch_ad_duration;
+			Config.twitchAdInterval = twitch_ad_interval;
 
 			return super.success(ctx, next, {
 				updated: {
@@ -61,6 +69,8 @@ class UpdateSettings extends AbstractEndpoint {
 					use_random_playlist,
 					use_entire_random_playlist,
 					max_video_quality,
+					twitch_ad_duration,
+					twitch_ad_interval,
 				},
 			});
 		}

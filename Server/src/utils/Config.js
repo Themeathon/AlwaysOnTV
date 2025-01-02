@@ -51,6 +51,8 @@ export default class Config {
 			max_video_quality: 1080,
 			use_random_playlist: true,
 			use_entire_random_playlist: false,
+			twitch_ad_duration: 30,
+			twitch_ad_interval: 30
 		};
 	}
 
@@ -114,6 +116,32 @@ export default class Config {
 		if (use_entire_random_playlist === undefined) return;
 
 		this.data.use_entire_random_playlist = use_entire_random_playlist;
+
+		this.save();
+	}
+
+	// twitchAdDuration
+	static get twitchAdDuration () {
+		return this.data.twitch_ad_duration;
+	}
+
+	static set twitchAdDuration (twitch_ad_duration) {
+		if (twitch_ad_duration === undefined) return;
+
+		this.data.twitch_ad_duration = twitch_ad_duration;
+
+		this.save();
+	}
+
+	// twitchAdInterval
+	static get twitchAdInterval () {
+		return this.data.twitch_ad_interval;
+	}
+
+	static set twitchAdInterval (twitch_ad_interval) {
+		if (twitch_ad_interval === undefined) return;
+
+		this.data.twitch_ad_interval = twitch_ad_interval;
 
 		this.save();
 	}

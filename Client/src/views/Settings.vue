@@ -51,7 +51,9 @@
 						Twitch Connection
 					</v-card-title>
 					<v-card-subtitle>
-						Channel: {{ channelNameAndLogin }}
+						Channel: {{ channelNameAndLogin.display_name }}
+						({{ channelNameAndLogin.login }})<br>
+						Status: {{ channelNameAndLogin.broadcaster_type }}
 
 						<v-checkbox
 							v-model="twitchEnabled"
@@ -110,6 +112,66 @@
 						</v-btn>
 					</v-card-text>
 				</v-card>
+
+				<v-divider
+					v-if="['affiliate', 'partner'].includes(channelNameAndLogin.broadcaster_type)"
+					thickness="3"
+				/>
+
+				<v-card
+					v-if="['affiliate', 'partner'].includes(channelNameAndLogin.broadcaster_type)"
+					variant="flat"
+				>
+					<v-card-title>
+						Twitch Ads Manager
+					</v-card-title>
+					<v-card-text>
+						<p>Manage your Twitch ads settings below to optimize revenue and viewer experience.</p>
+						<v-select
+							v-model="twitchAdDuration"
+							:items="twitchAdDurationOptions"
+							item-title="name"
+							item-value="duration"
+							label="Ad Duration"
+							hint="Select the duration for each ad break"
+							persistent-hint
+							:disabled="isAdsManagerRunning"
+						/>
+						<v-select
+							v-model="twitchAdInterval"
+							:items="twitchAdIntervalOptions"
+							item-title="name"
+							item-value="interval"
+							label="Ad Interval"
+							hint="Select the time interval between ad breaks"
+							persistent-hint
+							:disabled="isAdsManagerRunning"
+						/>
+
+						<p v-if="lastAdPlayed">Last ad played: {{ lastAdPlayed }}</p>
+						<p v-if="nextAdScheduled">Next ad scheduled: {{ nextAdScheduled }}</p>
+
+						<v-btn
+					color="green"
+					variant="outlined"
+					prepend-icon="mdi-play"
+					@click="startAdsManager"
+					:disabled="isAdsManagerRunning"
+				>
+					Start Ads Manager
+				</v-btn>
+				<v-btn
+					color="red"
+					variant="outlined"
+					prepend-icon="mdi-stop"
+					@click="stopAdsManager"
+					:disabled="!isAdsManagerRunning"
+				>
+					Stop Ads Manager
+				</v-btn>
+					</v-card-text>
+				</v-card>
+
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer />
@@ -149,7 +211,7 @@
 
 <script setup>
 import ky, { isLoading, API_URL } from '@/ky';
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 
 const settingsData = ref({});
 const showClientID = ref(false);
@@ -173,6 +235,23 @@ const twitchEnabled = ref(false);
 const streamingTitle = ref('');
 const clientID = ref('');
 const clientSecret = ref('');
+const twitchAdDuration = ref(null);
+const twitchAdDurationOptions = [
+	{ duration: 30, name: '30s' },
+	{ duration: 60, name: '60s' },
+	{ duration: 90, name: '90s' },
+	{ duration: 120, name: '120s' },
+	{ duration: 150, name: '150s' },
+	{ duration: 180, name: '180s' }
+];
+
+const twitchAdInterval = ref(null);
+const twitchAdIntervalOptions = [
+	{ interval: 15, name: '15 minutes'},
+	{ interval: 30, name: '30 minutes'},
+	{ interval: 45, name: '45 minutes'},
+	{ interval: 60, name: '60 minutes'},
+];
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -209,15 +288,18 @@ const canSave = computed(() => {
 	if (selectedVideoQuality.value !== settingsData.value?.max_video_quality)
 		return true;
 
+	if (twitchAdDuration.value !== settingsData.value?.twitch_ad_duration)
+		return true;
+
+	if (twitchAdInterval.value !== settingsData.value?.twitch_ad_interval)
+		return true;
+
 	return false;
 });
 
 const channelNameAndLogin = computed(() => {
 	const twitch = settingsData.value?.twitch?.data;
-
-	if (!twitch) return 'Not connected';
-
-	return `${twitch.display_name} (${twitch.login})`;
+	return twitch ? twitch: 'Not connected';
 });
 
 const getSettings = async () => {
@@ -230,6 +312,8 @@ const getSettings = async () => {
 	useRandomPlaylist.value = settingsData.value.use_random_playlist;
 	useEntireRandomPlaylist.value = settingsData.value.use_entire_random_playlist;
 	selectedVideoQuality.value = videoQualityOptions.find(q => q.quality === settingsData.value.max_video_quality)?.quality;
+	twitchAdDuration.value = settingsData.value.twitch_ad_duration;
+	twitchAdInterval.value = settingsData.value.twitch_ad_interval;
 };
 
 onMounted(getSettings);
@@ -276,9 +360,6 @@ const openAuth = async () => {
 
 const saveSettings = async () => {
 	try {
-
-		console.log(useEntireRandomPlaylist.value)
-
 		await ky
 			.post('settings', {
 				json: {
@@ -289,6 +370,8 @@ const saveSettings = async () => {
 					use_random_playlist: useRandomPlaylist.value,
 					use_entire_random_playlist: useEntireRandomPlaylist.value,
 					max_video_quality: selectedVideoQuality.value,
+					twitch_ad_duration: twitchAdDuration.value,
+					twitch_ad_interval: twitchAdInterval.value,
 				},
 			})
 			.json();
@@ -312,6 +395,90 @@ const toggleCheckbox = (changedCheckbox) => {
   } else if (changedCheckbox === 'useEntireRandomPlaylist' && useEntireRandomPlaylist.value) {
     useRandomPlaylist.value = false;
   }
+};
+
+// Initial states
+const isAdsManagerRunning = ref(false);
+const lastAdPlayed = ref(null);
+const nextAdScheduled = ref(null);
+const intervalId = ref(null);
+
+// Load saved state from localStorage when page loads
+onMounted(() => {
+	const savedState = JSON.parse(localStorage.getItem('adsManagerState'));
+	if (savedState && savedState.isRunning) {
+		// Restore previous state
+		twitchAdInterval.value = savedState.interval;
+		lastAdPlayed.value = savedState.lastAdPlayed;
+		nextAdScheduled.value = savedState.nextAdScheduled;
+		isAdsManagerRunning.value = true;
+		// Restart interval if necessary
+		intervalId.value = setInterval(playAd, twitchAdInterval.value * 5000);
+	}
+});
+
+// Watch for changes to the ads manager state and save to localStorage
+watch(isAdsManagerRunning, (newVal) => {
+	localStorage.setItem(
+		'adsManagerState',
+		JSON.stringify({
+			isRunning: newVal,
+			interval: twitchAdInterval.value,
+			lastAdPlayed: lastAdPlayed.value,
+			nextAdScheduled: nextAdScheduled.value,
+		})
+	);
+});
+
+const playAd = async () => {
+	try {
+		await ky.post('twitch/start-commercial', {
+			json: { duration: 30 }, // Example ad duration
+		}).json();
+
+		lastAdPlayed.value = new Date().toLocaleTimeString();
+		nextAdScheduled.value = new Date(
+			Date.now() + twitchAdInterval.value * 5000
+		).toLocaleTimeString();
+
+		snackbarText.value = 'Ad played successfully!';
+	} catch (error) {
+		snackbarText.value = `Error playing ad: ${
+			error.response ? await error.response.text() : error.message
+		}`;
+	} finally {
+		snackbar.value = true;
+	}
+};
+
+const startAdsManager = () => {
+	isAdsManagerRunning.value = true;
+	lastAdPlayed.value = null;
+	nextAdScheduled.value = new Date(
+		Date.now() + twitchAdInterval.value * 5000
+	).toLocaleTimeString();
+
+	// Start the ad interval
+	intervalId.value = setInterval(() => {
+		playAd();
+	}, twitchAdInterval.value * 5000);
+
+	snackbarText.value = 'Ads Manager started!';
+	snackbar.value = true;
+};
+
+const stopAdsManager = () => {
+	isAdsManagerRunning.value = false;
+
+	// Stop the interval and clear it
+	clearInterval(intervalId.value);
+	intervalId.value = null;
+
+	// Clear the next scheduled ad
+	nextAdScheduled.value = null;
+
+	snackbarText.value = 'Ads Manager stopped!';
+	snackbar.value = true;
 };
 
 </script>

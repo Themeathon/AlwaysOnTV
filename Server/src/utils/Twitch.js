@@ -224,6 +224,45 @@ class Twitch {
 			throw error;
 		}
 	}
+
+	/**
+   * Starts a commercial on the channel.
+   * @param {number} duration - Length of the ad in seconds (30, 60, 90, 120, 150, or 180).
+   * @returns {object} Response from the Twitch API.
+   */
+	async startCommercial(duration = 30) {
+		try {
+		  if (!TwitchConfig.isEnabled) {
+			throw new Error('Twitch integration is not enabled.');
+		  }
+	
+		  const client_id = this.getClientID();
+		  const access_token = await this.getAccessToken();
+		  const broadcaster_id = this.getBroadcasterID();
+	
+		  if (!client_id || !access_token || !broadcaster_id) {
+			throw new Error('Missing client ID, access token, or broadcaster ID.');
+		  }
+	
+		  const response = await Utils.postAsJSON('https://api.twitch.tv/helix/channels/commercial', {
+			headers: {
+			  'Authorization': `Bearer ${access_token}`,
+			  'Client-ID': client_id,
+			  'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+			  broadcaster_id,
+			  length: duration,
+			}),
+		  });
+	
+		  return response?.data?.[0]; // Return the first result from the API response.
+		} catch (error) {
+		  pino.error('Error in Twitch.startCommercial');
+		  pino.error(error);
+		  throw error;
+		}
+	  }
 }
 
 export default new Twitch();

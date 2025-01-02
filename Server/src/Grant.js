@@ -18,7 +18,7 @@ class GrantUrismo {
 			twitch: {
 				key: '', // client-id
 				secret: '', // client-secret
-				scope: ['user_read', 'channel:manage:broadcast'], // Add any additional scopes you need
+				scope: ['user_read', 'channel:manage:broadcast', 'channel:edit:commercial'], // Add any additional scopes you need
 			},
 		});
 	}
