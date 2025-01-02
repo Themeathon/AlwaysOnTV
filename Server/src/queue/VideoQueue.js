@@ -7,6 +7,7 @@ import ytdl from '~/utils/ytdl/index.js';
 import Socket from '~/Socket.js';
 import pino from '~/utils/Pino.js';
 import VideoDatabase from '~/db/VideoDatabase.js';
+import { fetchPlaylist, formatVideos} from '~/api/queue/AddRandomPlaylistToQueue.js';
 
 class VideoQueue extends AbstractQueue {
 	constructor () {
@@ -74,30 +75,35 @@ class VideoQueue extends AbstractQueue {
 	}
 
 	// TODO: This can deadlock if only age-restricted videos are in the random playlist
-	async advanceQueue () {
+	async advanceQueue() {
 		let nextVideo = await super.getAndAdvance();
 
-		if (!nextVideo && Config.useRandomPlaylist) {
-			const randomVideo = await this.getRandomVideo();
+        if (!nextVideo) {
+            if (Config.useEntireRandomPlaylist) {
+                await this.addEntireRandomPlaylistToQueue();
+                nextVideo = await super.getAndAdvance();
+            } else if (Config.useRandomPlaylist) {
+                const randomVideo = await this.getRandomVideo();
+                if (randomVideo) {
+                    nextVideo = randomVideo;
+                }
+            } else {
+                pino.warn('advanceQueue: No configuration for random playlist or video fallback');
+            }
+        }
 
-			if (randomVideo) {
-				nextVideo = randomVideo;
-			}
-		}
+        if (!(await this.isVideoValid(nextVideo))) {
+            return this.advanceQueue();
+        }
 
-		if (!(await this.isVideoValid(nextVideo))) {
-			return this.advanceQueue();
-		}
+        nextVideo.length = await VideoDatabase.updateVideoLength(nextVideo.id);
 
-		// v1.1.0 update patch, will be removed in a newer version. Maybe v1.2.0
-		nextVideo.length = await VideoDatabase.updateVideoLength(nextVideo.id);
+        await this.updateCurrentVideo(nextVideo);
 
-		await this.updateCurrentVideo(nextVideo);
+        Socket.io.emit('next_video');
 
-		Socket.io.emit('next_video');
-
-		return nextVideo;
-	}
+        return nextVideo;
+    }
 
 	async isVideoValid (video) {
 		const info = await ytdl.getVideoInfo(video.id);
@@ -106,6 +112,16 @@ class VideoQueue extends AbstractQueue {
 
 		return true;
 	}
+
+	async addEntireRandomPlaylistToQueue() {
+        try {
+            const playlist = await fetchPlaylist({ use_entire_random_playlist: true });
+            await this.add(formatVideos(playlist));
+        } catch (error) {
+            pino.error({ error }, 'Failed to add entire random playlist to the queue');
+			throw new Error('Failed to add entire random playlist');
+        }
+    }
 }
 
 export default new VideoQueue();

@@ -9,6 +9,7 @@ import GetCurrentVideo from '~/api/queue/GetCurrentVideo.js';
 import GetNextVideo from '~/api/queue/GetNextVideo.js';
 import GetQueue from '~/api/queue/GetQueue.js';
 import UpdateQueue from '~/api/queue/UpdateQueue.js';
+import AddRandomPlaylistToQueue from './AddRandomPlaylistToQueue.js';
 
 class QueueRouter extends AbstractRouter {
 	constructor () {
@@ -28,6 +29,7 @@ class QueueRouter extends AbstractRouter {
 		router.put('/video', ...AddVideoToQueue);
 		router.put('/playlist', ...AddPlaylistToQueue);
 		router.put('/random', ...AddRandomVideosToQueue);
+		router.put('/randomPlaylist', ...AddRandomPlaylistToQueue);
 
 		router.get('/current', ...GetCurrentVideo);
 		router.post('/next', ...GetNextVideo);

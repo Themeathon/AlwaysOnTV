@@ -50,6 +50,7 @@ export default class Config {
 			},
 			max_video_quality: 1080,
 			use_random_playlist: true,
+			use_entire_random_playlist: false,
 		};
 	}
 
@@ -100,6 +101,19 @@ export default class Config {
 		if (use_random_playlist === undefined) return;
 
 		this.data.use_random_playlist = use_random_playlist;
+
+		this.save();
+	}
+
+	// useEntireRandomPlaylist
+	static get useEntireRandomPlaylist () {
+		return this.data.use_entire_random_playlist;
+	}
+
+	static set useEntireRandomPlaylist (use_entire_random_playlist) {
+		if (use_entire_random_playlist === undefined) return;
+
+		this.data.use_entire_random_playlist = use_entire_random_playlist;
 
 		this.save();
 	}

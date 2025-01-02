@@ -21,7 +21,14 @@
 						<v-checkbox
 							v-model="useRandomPlaylist"
 							hide-details
-							label="Use random video playlist"
+							label="Uses a random video from the Random Playlist"
+							@change="toggleCheckbox('useRandomPlaylist')"
+						/>
+						<v-checkbox
+							v-model="useEntireRandomPlaylist"
+							hide-details
+							label="Uses an entire random playlist"
+							@change="toggleCheckbox('useEntireRandomPlaylist')"
 						/>
 						<v-select
 							v-model="selectedVideoQuality"
@@ -149,6 +156,7 @@ const showClientID = ref(false);
 const showClientSecret = ref(false);
 const isAuthenticating = ref(false);
 const useRandomPlaylist = ref(false);
+const useEntireRandomPlaylist = ref(false);
 
 const selectedVideoQuality = ref(null);
 const videoQualityOptions = [
@@ -195,6 +203,9 @@ const canSave = computed(() => {
 	if (useRandomPlaylist.value !== settingsData.value?.use_random_playlist)
 		return true;
 
+	if (useEntireRandomPlaylist.value !== settingsData.value?.use_entire_random_playlist)
+		return true;
+
 	if (selectedVideoQuality.value !== settingsData.value?.max_video_quality)
 		return true;
 
@@ -217,6 +228,7 @@ const getSettings = async () => {
 	clientID.value = settingsData.value.twitch.client_id;
 	clientSecret.value = settingsData.value.twitch.client_secret;
 	useRandomPlaylist.value = settingsData.value.use_random_playlist;
+	useEntireRandomPlaylist.value = settingsData.value.use_entire_random_playlist;
 	selectedVideoQuality.value = videoQualityOptions.find(q => q.quality === settingsData.value.max_video_quality)?.quality;
 };
 
@@ -265,6 +277,8 @@ const openAuth = async () => {
 const saveSettings = async () => {
 	try {
 
+		console.log(useEntireRandomPlaylist.value)
+
 		await ky
 			.post('settings', {
 				json: {
@@ -273,6 +287,7 @@ const saveSettings = async () => {
 					client_id: clientID.value,
 					client_secret: clientSecret.value,
 					use_random_playlist: useRandomPlaylist.value,
+					use_entire_random_playlist: useEntireRandomPlaylist.value,
 					max_video_quality: selectedVideoQuality.value,
 				},
 			})
@@ -290,4 +305,13 @@ const saveSettings = async () => {
 		snackbarText.value = message;
 	}
 };
+
+const toggleCheckbox = (changedCheckbox) => {
+  if (changedCheckbox === 'useRandomPlaylist' && useRandomPlaylist.value) {
+    useEntireRandomPlaylist.value = false;
+  } else if (changedCheckbox === 'useEntireRandomPlaylist' && useEntireRandomPlaylist.value) {
+    useRandomPlaylist.value = false;
+  }
+};
+
 </script>
