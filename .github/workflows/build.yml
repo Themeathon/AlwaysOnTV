@@ -1,56 +1,35 @@
-name: Build and Deploy
-
-run-name: Build version ${{ github.event.client_payload.version }}
+name: Build
 
 on:
-  repository_dispatch:
-    types: [build]
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: '22.x'
 
-      - name: Fetch frontend repository
-        uses: actions/checkout@v3
-        with:
-          repository: Themeathon/AlwaysOnTV-Frontend
-          ref: main
-          path: frontend
-          token: ${{ secrets.AOTV_TOKEN }}
-
-      - name: Install dependencies and build frontend
+      - name: Install dependencies and build Client
         run: |
-          cd frontend
+          cd Client
           npm install
           npm run build
 
-      - name: Fetch backend repository
-        uses: actions/checkout@v3
-        with:
-          repository: Themeathon/AlwaysOnTV-Backend
-          ref: main
-          path: backend
-          token: ${{ secrets.AOTV_TOKEN }}
-
-      - name: Copy frontend build output to backend public directory
+      - name: Copy build output to Server directory
         run: |
-          cp -r frontend/dist backend/public
+          cp -r Client/dist Server/public
 
-      - name: Clean backend folder
+      - name: Clean .git from Server directory
         run: |
-          rm -rf backend/.git*
+          rm -rf Server/.git*
         
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: AlwaysOnTV-${{ github.event.client_payload.version }}
-          path: backend
+          name: build
+          path: Server
