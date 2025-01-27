@@ -20,7 +20,7 @@
 	"dependencies": {
 		"@babel/core": "^7.26.0",
 		"@babel/eslint-parser": "^7.25.9",
-		"@distube/ytdl-core": "^4.14.0",
+		"@distube/ytdl-core": "^4.15.9",
 		"@distube/ytpl": "^1.2.1",
 		"@freetube/yt-dash-manifest-generator": "^1.1.1",
 		"@koa/cors": "^5.0.0",
