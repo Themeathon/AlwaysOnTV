@@ -1,13 +1,13 @@
 {
 	"name": "alwaysontv-backend",
-	"version": "1.1.0",
+	"version": "1.1.2",
 	"description": "",
 	"type": "module",
 	"exports": {
 		"./knexfile.js": "./knexfile.js"
 	},
 	"engines": {
-		"node": ">=18.16 <20.0 || >=20.3"
+		"node": "<20.0 || >=20.3"
 	},
 	"scripts": {
 		"start": "node index.js",
@@ -18,15 +18,15 @@
 	"author": "AlwaysOnTV",
 	"license": "MIT",
 	"dependencies": {
-		"@babel/core": "^7.26.0",
-		"@babel/eslint-parser": "^7.25.9",
-		"@distube/ytdl-core": "^4.15.9",
+		"@babel/core": "^7.26.7",
+		"@babel/eslint-parser": "^7.26.5",
+		"@distube/ytdl-core": "^4.16.0",
 		"@distube/ytpl": "^1.2.1",
 		"@freetube/yt-dash-manifest-generator": "^1.1.1",
 		"@koa/cors": "^5.0.0",
 		"@koa/router": "^13.1.0",
-		"better-sqlite3": "^11.7.0",
-		"chalk": "^5.3.0",
+		"better-sqlite3": "^11.8.1",
+		"chalk": "^5.4.1",
 		"chokidar": "^3.6.0",
 		"got": "^14.4.5",
 		"grant": "^5.4.23",
@@ -52,10 +52,10 @@
 		"pino-pretty": "^13.0.0",
 		"socket.io": "^4.8.1",
 		"tmi.js": "^1.8.5",
-		"ytcog": "^2.5.1"
+		"ytcog": "^2.5.5"
 	},
 	"devDependencies": {
-		"eslint": "^9.17.0"
+		"eslint": "^9.19.0"
 	},
 	"imports": {
 		"~root/*": "./*.js",
@@ -64,5 +64,11 @@
 	"_moduleAliases": {
 		"~root": ".",
 		"~": "src"
+	},
+	"pnpm": {
+		"ignoredBuiltDependencies": [
+			"better-sqlite3",
+			"ffmpeg-static"
+		]
 	}
 }
