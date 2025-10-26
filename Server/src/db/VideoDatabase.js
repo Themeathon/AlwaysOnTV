@@ -41,6 +41,25 @@ class VideoDatabase extends AbstractDatabase {
 				'videos.title',
 				'videos.thumbnail_url',
 				'videos.length',
+				'videos.source_type',
+				'videos.file_path',
+				'games.id as gameId',
+				'games.title as gameTitle',
+			)
+			.join('games', 'videos.gameId', 'games.id')
+			.orderBy('videos.created_at', orderBy);
+	}
+
+	async getAllVideosWithSource (orderBy = 'asc') {
+		return this.getKnex()
+			.select(
+				'videos.id',
+				'videos.created_at',
+				'videos.title',
+				'videos.thumbnail_url',
+				'videos.length',
+				'videos.source_type',
+				'videos.file_path',
 				'games.id as gameId',
 				'games.title as gameTitle',
 			)
@@ -57,6 +76,8 @@ class VideoDatabase extends AbstractDatabase {
 				'videos.title',
 				'videos.thumbnail_url',
 				'videos.length',
+				'videos.source_type',
+				'videos.file_path',
 				'games.id as gameId',
 				'games.title as gameTitle',
 			)
@@ -73,6 +94,24 @@ class VideoDatabase extends AbstractDatabase {
 			return videoWithGame;
 		} else {
 			return false;
+		}
+	}
+
+	async updateVideoLengthIfZero (id, length) {
+		if (!id || typeof length !== 'number' || length <= 0) return false;
+
+		try {
+			const updatedCount = await this.getKnex()
+				.where({ id: id })
+				.where(function () {
+					this.whereNull('length').orWhere('length', 0);
+				})
+				.update({ length: length });
+
+			return updatedCount > 0;
+		} catch (error) {
+			pino.error({ err: error }, `Error in updateVideoLengthIfZero for ID ${id}`);
+			throw error;
 		}
 	}
 

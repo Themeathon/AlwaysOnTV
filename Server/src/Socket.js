@@ -1,6 +1,8 @@
 import { Server } from 'socket.io';
 import HistoryQueue from '~/queue/HistoryQueue.js';
 import VideoQueue from '~/queue/VideoQueue.js';
+import VideoDatabase from '~/db/VideoDatabase.js';
+import pino from '~/utils/Pino.js';
 
 export default class Socket {
 	static {
@@ -48,6 +50,22 @@ export default class Socket {
 					progress: this.currentVideoTime,
 					length: this.currentVideoLength,
 				});
+			});
+
+			socket.on('update_video_length', async (data) => {
+				if (data && data.id && typeof data.length === 'number' && data.length > 0) {
+					try {
+						const updated = await VideoDatabase.updateVideoLengthIfZero(data.id, data.length);
+
+						if (updated) {
+							pino.info(`Socket: Successfully updated length for video ${data.id} to ${data.length}.`);
+						}
+					} catch (error) {
+						pino.error({ err: error }, `Socket: Error updating video length for ID ${data.id}`);
+					}
+				} else {
+					pino.warn({ receivedData: data }, 'Socket: Received invalid data for update_video_length event.');
+				}
 			});
 		});
 	}

@@ -6,7 +6,6 @@ import HistoryQueue from '~/queue/HistoryQueue.js';
 import ytdl from '~/utils/ytdl/index.js';
 import Socket from '~/Socket.js';
 import pino from '~/utils/Pino.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
 import { fetchPlaylist, formatVideos} from '~/api/queue/AddRandomPlaylistToQueue.js';
 
 class VideoQueue extends AbstractQueue {
@@ -75,53 +74,88 @@ class VideoQueue extends AbstractQueue {
 	}
 
 	// TODO: This can deadlock if only age-restricted videos are in the random playlist
-	async advanceQueue() {
+	async advanceQueue () {
 		let nextVideo = await super.getAndAdvance();
 
-        if (!nextVideo) {
-            if (Config.useEntireRandomPlaylist) {
-                await this.addEntireRandomPlaylistToQueue();
-                nextVideo = await super.getAndAdvance();
-            } else if (Config.useRandomPlaylist) {
-                const randomVideo = await this.getRandomVideo();
-                if (randomVideo) {
-                    nextVideo = randomVideo;
-                }
-            } else {
-                pino.warn('advanceQueue: No configuration for random playlist or video fallback');
-            }
-        }
+		if (!nextVideo) {
+			pino.info('advanceQueue: Main queue empty, attempting fallback...');
+			if (Config.useEntireRandomPlaylist) {
+				try {
+					await this.addEntireRandomPlaylistToQueue();
+					nextVideo = await super.getAndAdvance();
+				} catch (error) {
+					pino.error({ err: error }, 'advanceQueue: Failed to add/get video from entire random playlist fallback.');
+					return false;
+				}
+			} else if (Config.useRandomPlaylist) {
+				pino.info('advanceQueue: Trying to get single random video...');
+				const randomVideo = await this.getRandomVideo();
+				if (randomVideo) {
+					pino.info(`advanceQueue: Got random video: ${randomVideo.id}`);
+					nextVideo = randomVideo;
+				} else {
+					pino.warn('advanceQueue: Random playlist fallback failed (no video returned).');
+				}
+			} else {
+				pino.warn('advanceQueue: No configuration for random playlist or video fallback');
+				return false;
+			}
+		}
 
-        if (!(await this.isVideoValid(nextVideo))) {
-            return this.advanceQueue();
-        }
+		if (!nextVideo) {
+			pino.warn('advanceQueue: No next video found after fallbacks.');
+			return false;
+		}
 
-        nextVideo.length = await VideoDatabase.updateVideoLength(nextVideo.id);
+		pino.info(`advanceQueue: Validating video ID ${nextVideo.id} (Type: ${nextVideo.source_type || 'unknown'})...`);
+		if (!(await this.isVideoValid(nextVideo))) {
+			pino.warn(`advanceQueue: Video ${nextVideo.id} is not valid, advancing queue again recursively.`);
+			return this.advanceQueue();
+		}
 
-        await this.updateCurrentVideo(nextVideo);
+		await this.updateCurrentVideo(nextVideo);
 
-        Socket.io.emit('next_video');
+		Socket.io.emit('next_video');
 
-        return nextVideo;
-    }
-
-	async isVideoValid (video) {
-		const info = await ytdl.getVideoInfo(video.id);
-
-		if (info?.videoDetails?.age_restricted) return false;
-
-		return true;
+		return nextVideo;
 	}
 
-	async addEntireRandomPlaylistToQueue() {
-        try {
-            const playlist = await fetchPlaylist({ use_entire_random_playlist: true });
-            await this.add(formatVideos(playlist));
-        } catch (error) {
-            pino.error({ error }, 'Failed to add entire random playlist to the queue');
+	async isVideoValid (video) {
+		if (!video || !video.id) {
+			pino.warn('isVideoValid: Received invalid video object (missing id).');
+			return false;
+		}
+
+		if (video.source_type === 'local') {
+			pino.info(`isVideoValid: Skipping YouTube check for local video ID ${video.id}`);
+			return true;
+		}
+
+		try {
+			pino.info(`isVideoValid: Performing YouTube check for video ID ${video.id}`);
+			const info = await ytdl.getVideoInfo(video.id);
+
+			if (info?.videoDetails?.age_restricted) {
+				pino.warn(`isVideoValid: YouTube video ${video.id} is age restricted.`);
+				return false;
+			}
+
+			return true;
+		} catch(error) {
+			pino.error({ err: error }, `isVideoValid: ytdl check failed for video ID ${video.id}`);
+			return false;
+		}
+	}
+
+	async addEntireRandomPlaylistToQueue () {
+		try {
+			const playlist = await fetchPlaylist({ use_entire_random_playlist: true });
+			await this.add(formatVideos(playlist));
+		} catch (error) {
+			pino.error({ error }, 'Failed to add entire random playlist to the queue');
 			throw new Error('Failed to add entire random playlist');
-        }
-    }
+		}
+	}
 }
 
 export default new VideoQueue();
