@@ -1,7 +1,5 @@
 import Joi from 'joi';
-
 import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-
 import VideoDatabase from '~/db/VideoDatabase.js';
 
 class GetAllVideos extends AbstractEndpoint {
@@ -26,7 +24,19 @@ class GetAllVideos extends AbstractEndpoint {
 				order = 'desc';
 			}
 
-			return super.success(ctx, next, await VideoDatabase.getAllVideos(order));
+			const videos = await VideoDatabase.getAllVideosWithSource(order);
+
+			const videosWithUrls = videos.map(video => {
+				if (video.source_type === 'local') {
+					return {
+						...video,
+						stream_url: `/api/local-media/local/${video.id}`,
+					};
+				}
+				return video;
+			});
+
+			return super.success(ctx, next, videosWithUrls);
 		}
 		catch (error) {
 			return super.error(ctx, error);

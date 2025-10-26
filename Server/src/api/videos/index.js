@@ -6,6 +6,7 @@ import DeleteVideoByID from '~/api/videos/DeleteVideoByID.js';
 import GetAllVideos from '~/api/videos/GetAllVideos.js';
 import GetVideoByID from '~/api/videos/GetVideoByID.js';
 import UpdateVideoByID from '~/api/videos/UpdateVideoByID.js';
+import ScanLocalVideos from '~/api/videos/ScanLocalVideos.js';
 
 class VideoRouter extends AbstractRouter {
 	constructor () {
@@ -25,6 +26,8 @@ class VideoRouter extends AbstractRouter {
 		router.get('/id/:id', ...GetVideoByID);
 		router.post('/id/:id', ...UpdateVideoByID);
 		router.post('/id/:id/delete', ...DeleteVideoByID);
+
+		router.post('/scan-local', ...ScanLocalVideos);
 	}
 }
 

@@ -51,6 +51,9 @@ export default class Config {
 			max_video_quality: 1080,
 			use_random_playlist: true,
 			use_entire_random_playlist: false,
+			local_media: {
+				base_paths: '["/path/to/your/videos", "/different/path/to/your/videos"]',
+			},
 		};
 	}
 
@@ -130,6 +133,29 @@ export class ServerConfig {
 
 	static get api_url () {
 		return this.config.api_url;
+	}
+}
+
+export class LocalMediaConfig {
+	static get config () {
+		return Config.data.local_media;
+	}
+
+	static save () {
+		Config.save();
+	}
+
+	// localBasePaths
+	static get localBasePaths () {
+		return this.config.base_paths;
+	}
+
+	static set localBasePaths (base_paths) {
+		if (base_paths === undefined) return;
+
+		this.config.base_paths = base_paths;
+
+		this.save();
 	}
 }
 

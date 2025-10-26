@@ -1,7 +1,7 @@
 import VideoQueue from '~/queue/VideoQueue.js';
-
 import AbstractEndpoint from '~/api/AbstractEndpoint.js';
 import Config from '~/utils/Config.js';
+// import pino from '~/utils/Pino.js';
 
 class GetNextVideo extends AbstractEndpoint {
 	setup () {
@@ -10,26 +10,46 @@ class GetNextVideo extends AbstractEndpoint {
 
 	async getNextVideo (ctx, next) {
 		try {
-			const result = await VideoQueue.advanceQueue();
+			const video = await VideoQueue.advanceQueue();
 
-			if (!result) {
-				return super.error(ctx, 'No items in the queue');
-			}
-
-			if (result) {
-				const data = {
-					...result,
-					video_quality: Config.maxVideoQuality,
-				};
-
-				return super.success(ctx, next, data);
-			}
-			else {
+			if (!video) {
 				return super.error(ctx, 'No more items in the queue');
 			}
-		}
-		catch (error) {
-			return super.error(ctx, error);
+
+			let responseData;
+
+			if (video.source_type === 'local') {
+				if (!video.id) {
+					throw new Error('Local video object invalid');
+				}
+				// pino.info(`GetNextVideo: Processing as local video (ID: ${video.id})`);
+				responseData = {
+					...video,
+					stream_url: `/api/local-media/local/${video.id}`,
+				};
+				delete responseData.video_quality;
+				delete responseData.file_path;
+			} else if (video.source_type === 'youtube') {
+				if (!video.id) {
+					throw new Error('YouTube video object invalid');
+				}
+				// pino.info(`GetNextVideo: Processing as YouTube video (ID: ${video.id})`);
+				responseData = {
+					...video,
+					video_quality: Config.maxVideoQuality,
+					source_type: 'youtube',
+				};
+				delete responseData.stream_url;
+				delete responseData.file_path;
+			} else {
+				throw new Error(`Unknown or missing video source_type: ${video.source_type}`);
+			}
+
+			// pino.info(`GetNextVideo: Sending video data for ID ${responseData.id}`);
+			return super.success(ctx, next, responseData);
+
+		} catch (error) {
+			return super.error(ctx, error.message || 'An internal error occurred in GetNextVideo');
 		}
 	}
 }

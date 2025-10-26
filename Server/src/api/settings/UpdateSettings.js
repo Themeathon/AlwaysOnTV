@@ -1,7 +1,5 @@
 import Joi from 'joi';
-
-import Config, { TwitchConfig } from '~/utils/Config.js';
-
+import Config, {LocalMediaConfig, TwitchConfig} from '~/utils/Config.js';
 import AbstractEndpoint from '~/api/AbstractEndpoint.js';
 
 class UpdateSettings extends AbstractEndpoint {
@@ -19,6 +17,7 @@ class UpdateSettings extends AbstractEndpoint {
 				use_random_playlist: Joi.bool(),
 				use_entire_random_playlist: Joi.bool(),
 				max_video_quality: Joi.number().allow(360, 480, 720, 1080, 1440, 2160),
+				local_base_paths: Joi.array().items(Joi.string().allow('')).optional(),
 			}).or(
 				'twitch_enabled',
 				'client_id',
@@ -27,6 +26,7 @@ class UpdateSettings extends AbstractEndpoint {
 				'use_random_playlist',
 				'use_entire_random_playlist',
 				'max_video_quality',
+				'local_base_paths',
 			),
 		});
 	}
@@ -41,6 +41,7 @@ class UpdateSettings extends AbstractEndpoint {
 				use_random_playlist,
 				use_entire_random_playlist,
 				max_video_quality,
+				local_base_paths,
 			} = ctx.request.body;
 
 			TwitchConfig.isEnabled = twitch_enabled;
@@ -51,6 +52,7 @@ class UpdateSettings extends AbstractEndpoint {
 			Config.useRandomPlaylist = use_random_playlist;
 			Config.useEntireRandomPlaylist = use_entire_random_playlist;
 			Config.maxVideoQuality = max_video_quality;
+			LocalMediaConfig.localBasePaths = local_base_paths;
 
 			return super.success(ctx, next, {
 				updated: {
@@ -61,6 +63,7 @@ class UpdateSettings extends AbstractEndpoint {
 					use_random_playlist,
 					use_entire_random_playlist,
 					max_video_quality,
+					local_base_paths,
 				},
 			});
 		}

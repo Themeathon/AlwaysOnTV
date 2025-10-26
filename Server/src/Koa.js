@@ -12,9 +12,6 @@ import mount from 'koa-mount';
 import GrantUrismo from '~/Grant.js';
 
 import Socket from '~/Socket.js';
-
-// --- Setup Koa
-
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 
@@ -80,8 +77,6 @@ async function setupKoa () {
 
 	return app;
 }
-
-// ---
 
 import setupRouters from '~/api/index.js';
 import pino from '~/utils/Pino.js';
