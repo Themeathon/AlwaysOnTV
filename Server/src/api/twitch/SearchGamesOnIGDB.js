@@ -29,7 +29,7 @@ class SearchGamesOnIGDB extends AbstractEndpoint {
 					const thumbnailUrl = twitchGame.box_art_url.replace('{width}x{height}', '500x700');
 
 					return {
-						id: null,
+						id: twitchGame.igdb_id,
 						name: twitchGame.name,
 						cover: {
 							url: thumbnailUrl,
