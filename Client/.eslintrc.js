@@ -10,7 +10,7 @@ module.exports = {
 		'vue/html-indent': ['error', 'tab'],
 		'vue/multi-word-component-names': 0,
 		indent: ['error', 'tab'],
-		'linebreak-style': ['error', 'windows'],
+		'linebreak-style': ['error', 'unix'],
 		quotes: ['error', 'single'],
 		semi: ['error', 'always'],
 		'space-before-function-paren': ['error', 'always'],
