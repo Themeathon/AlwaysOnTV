@@ -76,7 +76,7 @@ class PlaylistDatabase extends AbstractDatabase {
 				const results = (await trx(this.table_name)
 					.select('index')
 					.where({ playlistId })
-					.orderBy('index', 'desc')
+					.orderBy('index', 'asc')
 					.limit(1)
 			)[0];
 
