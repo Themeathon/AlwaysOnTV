@@ -189,6 +189,31 @@ class Twitch {
 		}
 	}
 
+	async getGamesByTwitchID (twitch_id) {
+		try {
+			const client_id = this.getClientID();
+			const access_token = await this.getAppAccessToken();
+
+			const idParams = Array.isArray(twitch_id) ? twitch_id : [twitch_id];
+
+			const queryString = new URLSearchParams();
+			idParams.forEach(id => queryString.append('id', id));
+
+			const json = await Utils.getAsJSON(`https://api.twitch.tv/helix/games?${queryString}`, {
+				headers: {
+					'Authorization': `Bearer ${access_token}`,
+					'Client-ID': client_id,
+				},
+			});
+
+			return json.data || [];
+		} catch (error) {
+			pino.error('Error in Twitch.getGamesByTwitchID');
+			pino.error(error);
+			throw error;
+		}
+	}
+
 	async updateChannelInformation ({ title, game_id }) {
 		if (!TwitchConfig.isEnabled) return true;
 

@@ -149,13 +149,25 @@
 						:disabled="isLoading"
 						:loading="isLoading"
 						:error-messages="searchErrorMessages"
-						label="Search"
+						label="Search by Name or ID"
 						append-inner-icon="mdi-magnify"
-						placeholder="Just Chatting"
+						placeholder="Just Chatting or ID=509658"
 						required
 						variant="solo-filled"
 						hide-details="auto"
 					/>
+				</v-row>
+				<v-row class="mt-2">
+					<v-col class="text-caption">
+						To find the correct Twitch Category ID, you can use this page:
+						<a
+							href="https://aquillium.com/get-twitch-category-id/"
+							target="_blank"
+							rel="noopener"
+						>
+							aquillium.com/get-twitch-category-id
+						</a>
+					</v-col>
 				</v-row>
 			</v-card-text>
 
@@ -208,7 +220,7 @@
 						Found {{ filteredSearchedGames.length }} games ({{ filteredSearchedGames.filter(g => g.isAdded).length }} already added)
 					</span>
 					<span v-else>
-						No games were found with that name
+						No games were found with that name or ID
 					</span>
 				</div>
 				<v-spacer />

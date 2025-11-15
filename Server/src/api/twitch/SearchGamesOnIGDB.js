@@ -21,7 +21,28 @@ class SearchGamesOnIGDB extends AbstractEndpoint {
 		try {
 			const { name, offset } = ctx.request.body;
 
-			return super.success(ctx, next, await Twitch.searchGamesOnIGDB(name, offset));
+			if (name.startsWith('id=') && name.length >= 3) {
+				const twitchId = name.substring(3);
+				const twitchGameList = await Twitch.getGamesByTwitchID(twitchId);
+
+				const igdbFormattedList = twitchGameList.map(twitchGame => {
+					const thumbnailUrl = twitchGame.box_art_url.replace('{width}x{height}', '500x700');
+
+					return {
+						id: null,
+						name: twitchGame.name,
+						cover: {
+							url: thumbnailUrl,
+						},
+						external_games: [
+							{ category: 14, uid: twitchGame.id },
+						],
+					};
+				});
+				return super.success(ctx, next, igdbFormattedList);
+			} else {
+				return super.success(ctx, next, await Twitch.searchGamesOnIGDB(name, offset));
+			}
 		}
 		catch (error) {
 			return super.error(ctx, error);
