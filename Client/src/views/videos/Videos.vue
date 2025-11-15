@@ -33,6 +33,34 @@
 			align="center"
 		>
 			<v-col
+		  cols="12"
+		  sm="6"
+		  md="4"
+		  lg="3"
+	  >
+		  <v-btn
+			color="blue"
+			variant="outlined"
+			prepend-icon="mdi-playlist-plus"
+			class="mx-2"
+			@click="toggleSelectionMode"
+		  >
+			  {{ selectionMode ? 'Stop selection' : 'Add videos to playlist' }}
+		  </v-btn>
+				<v-btn
+					v-if="selectionMode"
+					color="orange"
+					variant="flat"
+					prepend-icon="mdi-playlist-plus"
+					:disabled="selectedVideoIds.length === 0"
+					class="mx-2"
+					@click="openAddToPlaylistDialog()"
+					>
+					{{ `Add ${selectedVideoIds.length} selected video(s) to playlist` }}
+				</v-btn>
+			</v-col>
+
+			<v-col
 				cols="12"
 				sm="6"
 				md="4"
@@ -109,6 +137,8 @@
 								<v-card
 									rounded="false"
 									flat
+
+									@click.stop="selectionMode ? toggleVideoSelection(item.id) : null"
 								>
 									<v-img
 										:src="item.thumbnail_url || placeholderImage"
@@ -119,7 +149,7 @@
 										v-bind="props"
 									/>
 									<v-overlay
-										:model-value="isHovering"
+										:model-value="isHovering && !selectionMode"
 										contained
 										class="align-center justify-center"
 										scrim="#000000"
@@ -135,7 +165,7 @@
 													color="orange-darken-4"
 													variant="flat"
 													:loading="isLoading"
-													@click="queueVideo(item.id)"
+													@click.stop="queueVideo(item.id)"
 												>
 													<v-tooltip
 														activator="parent"
@@ -152,7 +182,7 @@
 													size="large"
 													color="blue-darken-1"
 													variant="flat"
-													@click="openAddToPlaylistDialog(item)"
+													@click.stop="openAddToPlaylistDialog(item)"
 												>
 													<v-tooltip
 														activator="parent"
@@ -169,7 +199,7 @@
 													size="large"
 													color="green-darken-1"
 													variant="flat"
-													@click="openEditVideoDialog(item)"
+													@click.stop="openEditVideoDialog(item)"
 												>
 													<v-tooltip
 														activator="parent"
@@ -186,7 +216,7 @@
 													size="large"
 													color="red-darken-1"
 													variant="flat"
-													@click="openDeleteDialog(item)"
+													@click.stop="openDeleteDialog(item)"
 												>
 													<v-tooltip
 														activator="parent"
@@ -200,6 +230,20 @@
 											</v-row>
 											<v-spacer />
 										</div>
+									</v-overlay>
+									<v-overlay
+										:model-value="selectionMode"
+										contained
+										class="align-center justify-center"
+										scrim="#00000088"
+										:opacity="0.8"
+										:z-index="1"
+										>
+										<v-icon
+											:icon="isVideoSelected(item.id) ? 'mdi-check-circle' : 'mdi-checkbox-blank-circle-outline'"
+											size="80"
+											:color="isVideoSelected(item.id) ? 'green' : 'white'"
+										/>
 									</v-overlay>
 								</v-card>
 							</v-hover>
@@ -541,7 +585,7 @@
 	>
 		<v-card>
 			<v-card-title>
-				<span class="text-h5">Add Video "{{ selectedVideoForPlaylist.title }}" to Playlist</span>
+				<span class="text-h5">Add {{ selectedVideoIds.length }} video(s) to Playlist</span>
 			</v-card-title>
 			<v-card-text>
 				<v-container>
@@ -609,7 +653,7 @@
 				<v-btn
 					color="green-darken-1"
 					variant="text"
-					:disabled="!selectedPlaylist"
+					:disabled="!selectedPlaylist || selectedVideoIds.length === 0"
 					:loading="isLoading"
 					@click="addVideoToPlaylist"
 				>
@@ -683,10 +727,30 @@ const selectedVideoForPlaylist = ref({});
 const selectPlaylistDialog = ref(null);
 const selectedPlaylist = ref(null);
 
+const selectionMode = ref(false);
+const selectedVideoIds = ref([]);
+
 const formatVideoLength = (length) => {
 	const progress = Duration.fromObject({seconds: length || 0});
 	return progress.toFormat('hh:mm:ss');
 };
+
+const toggleSelectionMode = () => {
+	selectionMode.value = !selectionMode.value;
+	selectedVideoIds.value = [];
+};
+
+const toggleVideoSelection = (videoId) => {
+	const index = selectedVideoIds.value.indexOf(videoId);
+	if (index > -1) {
+		selectedVideoIds.value.splice(index, 1);
+	} else {
+		selectedVideoIds.value.push(videoId);
+	}
+};
+
+const isVideoSelected = (videoId) => selectedVideoIds.value.includes(videoId);
+
 
 const getGameThumbnailURL = () => selectedGame.value?.thumbnail_url || placeholderImage;
 const getGameTitle = () => selectedGame.value?.title || 'N/A';
@@ -975,8 +1039,17 @@ const openSelectGameDialog = () => selectGameDialog.value.open();
 
 const selectGame = (game) => selectedGame.value = game;
 
-const openAddToPlaylistDialog = (video) => {
-	selectedVideoForPlaylist.value = video;
+const openAddToPlaylistDialog = (video = null) => {
+	if (selectionMode.value && selectedVideoIds.value.length > 0) {
+		selectedVideoForPlaylist.value = {};
+	} else if (video) {
+		selectedVideoForPlaylist.value = video;
+		selectedVideoIds.value = [video.id];
+	} else if (selectedVideoIds.value.length === 0) {
+		showSnackbar('No videos selected.');
+		return;
+	}
+
 	selectedPlaylist.value = null;
 	addToPlaylistDialog.value = true;
 };
@@ -985,6 +1058,7 @@ const closeAddToPlaylistDialog = () => {
 	addToPlaylistDialog.value = false;
 	selectedVideoForPlaylist.value = {};
 	selectedPlaylist.value = null;
+	selectedVideoIds.value = [];
 };
 
 const openSelectPlaylistDialog = () => selectPlaylistDialog.value.open();
@@ -992,20 +1066,34 @@ const openSelectPlaylistDialog = () => selectPlaylistDialog.value.open();
 const selectPlaylist = (playlist) => selectedPlaylist.value = playlist;
 
 const addVideoToPlaylist = async () => {
-	if (!selectedPlaylist.value || !selectedVideoForPlaylist.value) return;
+	if (!selectedPlaylist.value || selectedVideoIds.value.length === 0) return;
 
 	try {
 		isLoading.value = true;
 
 		await ky.put(`playlists/id/${selectedPlaylist.value.id}/video`, {
-			json: {videoId: selectedVideoForPlaylist.value.id},
+			json: {videoId: selectedVideoIds.value},
 		}).json();
 
+		const count = selectedVideoIds.value.length;
 		closeAddToPlaylistDialog();
-		showSnackbar('Successfully added video to playlist.');
+		showSnackbar(`Successfully added ${count} video(s) to playlist.`);
+
+		if (selectionMode.value) {
+			selectionMode.value = false;
+		}
 
 	} catch (error) {
-		showSnackbar(`Error adding video to playlist: ${await error?.response?.text() || error.message}`);
+		let errorMessage = 'An unknown error occurred.';
+
+		try {
+			const errorText = await error.response.text();
+			errorMessage = errorText;
+		} catch (e) {
+			errorMessage = error.message;
+		}
+
+		showSnackbar(`Error adding video to playlist: ${errorMessage}`);
 	} finally {
 		isLoading.value = false;
 	}

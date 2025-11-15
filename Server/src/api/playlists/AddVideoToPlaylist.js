@@ -9,7 +9,7 @@ class AddVideoToPlaylist extends AbstractEndpoint {
 	setup () {
 		this.add(this.checkPlaylist);
 		this.add(this.checkVideo);
-		this.add(this.addVideoToPlaylist);
+		this.add(this.addVideosToPlaylist);
 	}
 
 	getSchema () {
@@ -18,7 +18,10 @@ class AddVideoToPlaylist extends AbstractEndpoint {
 				id: Joi.number().required(),
 			}),
 			body: Joi.object({
-				videoId: Joi.string().required(),
+				videoId: Joi.alternatives().try(
+					Joi.string().required(),
+					Joi.array().items(Joi.string().required()).min(1).required(),
+				).required(),
 			}),
 		});
 	}
@@ -37,24 +40,34 @@ class AddVideoToPlaylist extends AbstractEndpoint {
 	}
 
 	async checkVideo (ctx, next) {
-		const { videoId } = ctx.request.body;
+		let { videoId } = ctx.request.body;
 
-		const video = await VideoDatabase.getVideo(videoId);
-		if (!video) {
-			return super.error(ctx, `Couldn't find video with ID ${videoId}`);
+		const videoIds = Array.isArray(videoId) ? videoId : [videoId];
+
+		const existingVideos = await VideoDatabase.selectIn('id', videoIds);
+		const existingVideoIds = existingVideos.map(v => v.id);
+
+		const missingVideos = videoIds.filter(id => !existingVideoIds.includes(id));
+
+		if (missingVideos.length > 0) {
+			return super.error(ctx, `Couldn't find video(s) with ID(s) ${missingVideos.join(', ')}`);
 		}
 
-		ctx.videoId = videoId;
+		ctx.videoIds = existingVideoIds;
 
 		return next();
 	}
 
-	async addVideoToPlaylist (ctx, next) {
+	async addVideosToPlaylist (ctx, next) {
 		try {
 			const playlistId = ctx.playlistId;
-			const videoId = ctx.videoId;
+			const videoIds = ctx.videoIds;
 
-			await PlaylistVideoDatabase.addVideoToPlaylist(playlistId, videoId);
+			if (videoIds.length === 0) {
+				return super.success(ctx, next, { message: 'No videos to add.'});
+			}
+
+			await PlaylistVideoDatabase.addVideosToPlaylist(playlistId, videoIds);
 
 			return super.success(ctx, next);
 		}
