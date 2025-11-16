@@ -30,6 +30,8 @@ class VideoDatabase extends AbstractDatabase {
 			table.string('thumbnail_url').notNullable().defaultTo(null).comment('YouTube Thumbnail URL');
 
 			table.integer('length').notNullable().defaultTo(0).comment('Video Length In Seconds');
+			table.string('source_type').notNullable().defaultTo(null).comment('YouTube Video Source Type');
+			table.string('file_path').notNullable().defaultTo(null).comment('Video file path');
 		});
 	}
 
@@ -211,6 +213,25 @@ class VideoDatabase extends AbstractDatabase {
 		});
 
 		return length;
+	}
+
+	async getMaxLocalVideoId () {
+		const sql_query = this.getKnex()
+			.select(this.knex.raw('MAX(CAST(SUBSTR(id, 7) AS INTEGER)) AS max_id_num'))
+			.from(this.table_name)
+			.where('id', 'like', 'local-%');
+
+		try {
+			const result = await sql_query.first();
+
+			const maxNumber = result?.max_id_num;
+
+			return maxNumber || 0;
+
+		} catch (error) {
+			pino.error(`Error fetching max local video ID: ${error.message}`);
+			return 0;
+		}
 	}
 }
 

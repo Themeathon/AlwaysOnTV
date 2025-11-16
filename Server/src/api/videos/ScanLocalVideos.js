@@ -5,7 +5,6 @@ import GameDatabase from '~/db/GameDatabase.js';
 import pino from '~/utils/Pino.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
 
 const SUPPORTED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov'];
 
@@ -59,6 +58,8 @@ class ScanLocalVideos extends AbstractEndpoint {
 		const skippedVideos = [];
 		const failedVideos = [];
 
+		let videoCounter = await Promise.resolve(VideoDatabase.getMaxLocalVideoId());
+
 		for (const filePath of allVideoFiles) {
 			try {
 				const existing = await VideoDatabase.tryGet({ file_path: filePath });
@@ -68,9 +69,10 @@ class ScanLocalVideos extends AbstractEndpoint {
 				}
 
 				const metadata = await this.getVideoMetadata(filePath);
+				videoCounter++;
 
 				const videoData = {
-					id: randomUUID(),
+					id: 'local-' + videoCounter,
 					title: metadata.title,
 					length: metadata.length,
 					thumbnail_url: '', // TODO: Generate thumbnail?
