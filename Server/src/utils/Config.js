@@ -52,7 +52,9 @@ export default class Config {
 			use_random_playlist: true,
 			use_entire_random_playlist: false,
 			local_media: {
-				base_paths: '["/path/to/your/videos", "/different/path/to/your/videos"]',
+				base_paths: [
+					'Insert your path here',
+				],
 			},
 		};
 	}
