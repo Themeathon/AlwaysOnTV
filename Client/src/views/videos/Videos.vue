@@ -33,20 +33,20 @@
 			align="center"
 		>
 			<v-col
-		  cols="12"
-		  sm="6"
-		  md="4"
-		  lg="3"
-	  >
-		  <v-btn
-			color="blue"
-			variant="outlined"
-			prepend-icon="mdi-playlist-plus"
-			class="mx-2"
-			@click="toggleSelectionMode"
-		  >
-			  {{ selectionMode ? 'Stop selection' : 'Add videos to playlist' }}
-		  </v-btn>
+				cols="12"
+				sm="6"
+				md="4"
+				lg="3"
+			>
+				<v-btn
+					color="blue"
+					variant="outlined"
+					prepend-icon="mdi-playlist-plus"
+					class="mx-2"
+					@click="toggleSelectionMode"
+				>
+					{{ selectionMode ? 'Stop selection' : 'Add videos to playlist' }}
+				</v-btn>
 				<v-btn
 					v-if="selectionMode"
 					color="orange"
@@ -55,7 +55,7 @@
 					:disabled="selectedVideoIds.length === 0"
 					class="mx-2"
 					@click="openAddToPlaylistDialog()"
-					>
+				>
 					{{ `Add ${selectedVideoIds.length} selected video(s) to playlist` }}
 				</v-btn>
 			</v-col>
@@ -238,7 +238,7 @@
 										scrim="#00000088"
 										:opacity="0.8"
 										:z-index="1"
-										>
+									>
 										<v-icon
 											:icon="isVideoSelected(item.id) ? 'mdi-check-circle' : 'mdi-checkbox-blank-circle-outline'"
 											size="80"
@@ -249,8 +249,15 @@
 							</v-hover>
 						</div>
 						<v-spacer />
-						<v-card-title class="text-wrap">
-							<span :title="item.title">{{ item.title }}</span>
+						<v-card-title>
+							<v-col class="pa-0">
+								<span
+									:title="item.title"
+									style="white-space: normal;"
+								>
+									{{ item.title }}
+								</span>
+							</v-col>
 						</v-card-title>
 						<v-spacer />
 						<v-card-subtitle class="mb-2">
@@ -282,11 +289,21 @@
 									v-if="item.source_type === 'youtube'"
 									:href="`https://youtube.com/watch?v=${item.id}`"
 									target="_blank"
-								>{{ item.id }}</a>
+								>
+									{{ item.id }}
+								</a>
+								<a
+									v-else-if="item.source_type === 'local'"
+									:title="item.id"
+								>
+									{{ item.id }}
+								</a>
 								<span
 									v-else
 									:title="item.id"
-								>{{ item.id.substring(0, 8) }}...</span>
+								>
+									{{ item.id.substring(0, 12) }}...
+								</span>
 							</p>
 							<p>
 								<strong>Game:</strong> {{ item.gameTitle }}
@@ -750,7 +767,6 @@ const toggleVideoSelection = (videoId) => {
 };
 
 const isVideoSelected = (videoId) => selectedVideoIds.value.includes(videoId);
-
 
 const getGameThumbnailURL = () => selectedGame.value?.thumbnail_url || placeholderImage;
 const getGameTitle = () => selectedGame.value?.title || 'N/A';
