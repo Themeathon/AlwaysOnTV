@@ -1,5 +1,3 @@
-import Joi from 'joi';
-
 export default class AbstractEndpoint {
 	constructor () {
 		this._middlewares = [];
