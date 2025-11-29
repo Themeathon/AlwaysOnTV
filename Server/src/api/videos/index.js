@@ -7,6 +7,7 @@ import GetAllVideos from '~/api/videos/GetAllVideos.js';
 import GetVideoByID from '~/api/videos/GetVideoByID.js';
 import UpdateVideoByID from '~/api/videos/UpdateVideoByID.js';
 import ScanLocalVideos from '~/api/videos/ScanLocalVideos.js';
+import UploadThumbnail from '~/api/videos/UploadThumbnail.js';
 
 class VideoRouter extends AbstractRouter {
 	constructor () {
@@ -28,6 +29,7 @@ class VideoRouter extends AbstractRouter {
 		router.post('/id/:id/delete', ...DeleteVideoByID);
 
 		router.post('/scan-local', ...ScanLocalVideos);
+		router.post('/id/:id/thumbnail', ...UploadThumbnail);
 	}
 }
 

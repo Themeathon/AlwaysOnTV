@@ -491,6 +491,17 @@
 						hide-details
 					/>
 				</v-row>
+				<v-row class="mt-4">
+					<v-file-input
+						v-model="thumbnailFile"
+						accept="image/*"
+						label="Upload Custom Thumbnail"
+						prepend-icon="mdi-camera"
+						variant="solo-filled"
+						hide-details
+						show-size
+					/>
+				</v-row>
 				<v-row class="mb-0">
 					<v-btn
 						color="green-darken-1"
@@ -747,6 +758,8 @@ const selectedPlaylist = ref(null);
 const selectionMode = ref(false);
 const selectedVideoIds = ref([]);
 
+const thumbnailFile = ref(null);
+
 const formatVideoLength = (length) => {
 	const progress = Duration.fromObject({seconds: length || 0});
 	return progress.toFormat('hh:mm:ss');
@@ -826,6 +839,7 @@ const disableAddVideo = computed(() => {
 
 const canSaveEdit = computed(() => {
 	if (!editingVideo.value || !originalEditingVideo.value) return false;
+	if (thumbnailFile.value) return true;
 	return editingVideo.value.title !== originalEditingVideo.value.title ||
       selectedGame.value?.id !== originalEditingVideo.value.gameId;
 });
@@ -990,21 +1004,36 @@ const openEditVideoDialog = async (video) => {
 	} catch {
 		selectedGame.value = defaultGame.value;
 	}
+	thumbnailFile.value = null;
 	editVideoDialog.value = true;
 };
 
 const editVideo = async (videoId) => {
 
-	if (!canSaveEdit.value) return;
+	if (!canSaveEdit.value && !thumbnailFile.value) return;
 	try {
 		isLoading.value = true;
 
-		await ky.post(`videos/id/${videoId}`, {
-			json: {
-				title: editingVideo.value.title,
-				gameId: selectedGame.value?.id,
-			},
-		}).json();
+		if (canSaveEdit.value) {
+			await ky.post(`videos/id/${videoId}`, {
+				json: {
+					title: editingVideo.value.title,
+					gameId: selectedGame.value?.id,
+				},
+			}).json();
+		}
+
+		if (thumbnailFile.value) {
+			const formData = new FormData();
+
+			const file = Array.isArray(thumbnailFile.value) ? thumbnailFile.value[0] : thumbnailFile.value;
+
+			formData.append('thumbnail', file);
+
+			await ky.post(`videos/id/${videoId}/thumbnail`, {
+				body: formData,
+			});
+		}
 
 		await fetchVideos();
 
