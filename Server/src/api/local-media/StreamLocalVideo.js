@@ -13,7 +13,7 @@ class StreamLocalVideo extends AbstractEndpoint {
 	getSchema () {
 		return Joi.object({
 			params: Joi.object({
-				id: Joi.string().guid({ version: ['uuidv4'] }).required(),
+				id: Joi.string().required(),
 			}),
 		});
 	}

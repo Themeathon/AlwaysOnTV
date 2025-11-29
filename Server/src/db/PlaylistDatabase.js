@@ -90,6 +90,7 @@ class PlaylistDatabase extends AbstractDatabase {
 									thumbnail_url: video.thumbnail_url,
 									length: video.length,
 									gameId,
+									sourceType: video.sourceType,
 								});
 
 							// If new videos that aren't yet in the database should be added to the random playlist
@@ -203,6 +204,7 @@ class PlaylistDatabase extends AbstractDatabase {
 				'videos.thumbnail_url as videos:thumbnail_url',
 				'videos.gameId as videos:gameId',
 				'videos.length as videos:length',
+				'videos.source_type as videos:source_type',
 				'playlist_videos.index as videos:index',
 				'games.id as games:id',
 				'games.title as games:title',
@@ -248,6 +250,7 @@ class PlaylistDatabase extends AbstractDatabase {
 				thumbnail_url: row['videos:thumbnail_url'],
 				length: row['videos:length'],
 				gameId: row['videos:gameId'],
+				source_type: row['videos:source_type'],
 			};
 
 			if (!playlistData.thumbnail_url) {

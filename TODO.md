@@ -9,7 +9,7 @@
 - [ ] Thumbnails can be set manually for videos
 
 ### Playlist Queue
-- [ ] is currently broken, because it just skips all the videos in the queue
+- [x] is currently broken, because it just skips all the videos in the queue
 
 #### Misc
 - [ ] Reduce scrolling in dialogs
