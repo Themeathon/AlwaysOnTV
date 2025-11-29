@@ -1,4 +1,6 @@
 import Joi from 'joi';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import VideoDatabase from '~/db/VideoDatabase.js';
 
@@ -30,6 +32,7 @@ class DeleteVideoByID extends AbstractEndpoint {
 		}
 
 		ctx.videoId = videoId;
+		ctx.video = video;
 
 		return next();
 	}
@@ -38,6 +41,23 @@ class DeleteVideoByID extends AbstractEndpoint {
 		try {
 			const videoId = ctx.videoId;
 			const { force } = ctx.request.body;
+			const thumbnail = ctx.video.thumbnail_url;
+
+			if (thumbnail && thumbnail.startsWith('/thumbnails/')) {
+				try {
+					const relativePath = thumbnail.replace(/^\//, '');
+					const filePath = path.join(process.cwd(), 'public',  relativePath);
+
+					await fs.unlink(filePath, (err) => {
+						if (err) {
+							console.error(err);
+						}
+					});
+
+				} catch (error) {
+					return super.error(ctx, error);
+				}
+			}
 
 			const status = await VideoDatabase.deleteVideo(videoId, force);
 			if (status === true) {
