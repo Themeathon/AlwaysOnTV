@@ -61,7 +61,7 @@ export default class AbstractEndpoint {
 			} catch (validationError) {
 				const errorDetails = validationError.error.details.map(d => d.message).join(', ');
 				const errorMessage = `Validation Error in ${validationError.target}: ${errorDetails}`;
-				return super.error(ctx, errorMessage, 400);
+				return this.error(ctx, errorMessage, 400);
 			}
 
 			return next();

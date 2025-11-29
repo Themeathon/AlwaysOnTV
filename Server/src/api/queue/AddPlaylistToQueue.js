@@ -48,6 +48,7 @@ class AddPlaylistToQueue extends AbstractEndpoint {
 					thumbnail_url: tempVideo.thumbnail_url,
 					length: tempVideo.length,
 					game: playlist.gameInfo[tempVideo.gameId],
+					source_type: tempVideo.source_type,
 				});
 			}
 

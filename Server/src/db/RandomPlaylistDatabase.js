@@ -53,6 +53,7 @@ class RandomPlaylistDatabase extends AbstractDatabase {
 				'videos.thumbnail_url as videos:thumbnail_url',
 				'videos.gameId as videos:gameId',
 				'videos.length as videos:length',
+				'videos.source_type as videos:source_type',
 				'games.id as games:id',
 				'games.title as games:title',
 			)
@@ -92,6 +93,7 @@ class RandomPlaylistDatabase extends AbstractDatabase {
 				thumbnail_url: row['videos:thumbnail_url'],
 				length: row['videos:length'],
 				gameId: row['videos:gameId'],
+				source_type: row['videos:source_type'],
 			};
 
 			if (!playlistData.videoInfo[videoInfo.id]) {
