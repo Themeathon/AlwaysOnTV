@@ -5,6 +5,12 @@ import GameDatabase from '~/db/GameDatabase.js';
 import pino from '~/utils/Pino.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import ffmpeg from 'fluent-ffmpeg';
+import ffmpegPath from 'ffmpeg-static';
+import { path as ffprobePath } from 'ffprobe-static';
+
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 const SUPPORTED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov'];
 
@@ -31,12 +37,43 @@ class ScanLocalVideos extends AbstractEndpoint {
 		return files;
 	}
 
-	// TODO: Add VideoMetadata from local media
-	async getVideoMetadata (filePath) {
-		return new Promise((resolve) => {
-			resolve({
-				title: path.basename(filePath, path.extname(filePath)),
-				length: 0,
+	async processVideoFile (filePath, videoId) {
+		return new Promise((resolve, reject) => {
+			const thumbnailDir = path.join(process.cwd(), 'public', 'thumbnails');
+			const thumbnailFileName = `${videoId}.png`;
+			const thumbnailPublicPath = `/thumbnails/${thumbnailFileName}`;
+
+			ffmpeg.ffprobe(filePath, (err, metadata) => {
+				if (err) {
+					pino.error(`Error probing file ${filePath}: ${err.message}`);
+					return resolve({ length: 0, thumbnail_url: '' });
+				}
+
+				const duration = metadata.format.duration || 0;
+
+				const timestamp = duration > 10 ? '20%' : '1';
+
+				ffmpeg(filePath)
+					.on('end', () => {
+						resolve({
+							length: Math.round(duration),
+							thumbnail_url: thumbnailPublicPath,
+						});
+					})
+					.on('error', (err) => {
+						pino.error(`Error generating thumbnail for ${filePath}: ${err.message}`);
+						resolve({
+							length: Math.round(duration),
+							thumbnail_url: '',
+						});
+					})
+					.screenshots({
+						count: 1,
+						folder: thumbnailDir,
+						filename: thumbnailFileName,
+						timestamps: [timestamp],
+						size: '640x360',
+					});
 			});
 		});
 	}
@@ -47,12 +84,13 @@ class ScanLocalVideos extends AbstractEndpoint {
 			return super.error(ctx, 'No local media base paths configured in config.json');
 		}
 
+		const thumbnailDir = path.join(process.cwd(), 'public', 'thumbnails');
+		await fs.mkdir(thumbnailDir, { recursive: true });
+
 		let allVideoFiles = [];
 		for (const basePath of basePaths) {
 			allVideoFiles = allVideoFiles.concat(await this.findVideoFiles(basePath));
 		}
-
-		// pino.info(`Found ${allVideoFiles.length} potential video files.`);
 
 		const addedVideos = [];
 		const skippedVideos = [];
@@ -68,14 +106,17 @@ class ScanLocalVideos extends AbstractEndpoint {
 					continue;
 				}
 
-				const metadata = await this.getVideoMetadata(filePath);
 				videoCounter++;
+				const newVideoId = 'local-' + videoCounter;
+
+				pino.info(`Processing new video: ${filePath} (ID: ${newVideoId})...`);
+				const metadata = await this.processVideoFile(filePath, newVideoId);
 
 				const videoData = {
-					id: 'local-' + videoCounter,
-					title: metadata.title,
+					id: newVideoId,
+					title: path.basename(filePath, path.extname(filePath)),
 					length: metadata.length,
-					thumbnail_url: '', // TODO: Generate thumbnail?
+					thumbnail_url: metadata.thumbnail_url,
 					gameId: GameDatabase.getDefaultGameID(),
 					source_type: 'local',
 					file_path: filePath,
@@ -85,7 +126,7 @@ class ScanLocalVideos extends AbstractEndpoint {
 				if (createdVideo) {
 					addedVideos.push(createdVideo);
 				} else {
-					failedVideos.push({ path: filePath, reason: 'Database insertion failed (maybe duplicate ID somehow?)' });
+					failedVideos.push({ path: filePath, reason: 'Database insertion failed' });
 				}
 
 			} catch (error) {
