@@ -76,30 +76,30 @@ class PlaylistDatabase extends AbstractDatabase {
 				const results = (await trx(this.table_name)
 					.select('index')
 					.where({ playlistId })
-					.orderBy('index', 'asc')
+					.orderBy('index', 'desc')
 					.limit(1)
-			)[0];
+				)[0];
 
-			let newIndex = (results?.index || 0) + 1;
+				let newIndex = (results?.index || 0) + 1;
 
-			const insertions = videoIds.map(videoId => ({
+				const insertions = videoIds.map(videoId => ({
 					playlistId,
 					index: newIndex++,
 					videoId,
-			}));
+				}));
 
-			if (insertions.length > 0) {
-				await trx(this.table_name).insert(insertions);
-			}
-		});
+				if (insertions.length > 0) {
+					await trx(this.table_name).insert(insertions);
+				}
+			});
 
-		await this.fixPlaylistPositions(playlistId);
+			await this.fixPlaylistPositions(playlistId);
 
-		return true;
-	} catch (error) {
-		pino.error('Error in PlaylistVideoDatabase.addVideosToPlaylist');
-		pino.error(error);
-		throw error;
+			return true;
+		} catch (error) {
+			pino.error('Error in PlaylistVideoDatabase.addVideosToPlaylist');
+			pino.error(error);
+			throw error;
 		}
 	}
 
