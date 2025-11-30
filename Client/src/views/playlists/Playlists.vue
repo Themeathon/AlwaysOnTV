@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div class="d-flex flex-column h-100">
 
 		<div class="pa-8 text-center">
 			<v-btn
@@ -89,7 +89,10 @@
 			</v-row>
 		</v-container>
 
-		<div>
+		<div
+			class="flex-grow-1 overflow-y-auto"
+			style="min-height: 0;"
+		>
 			<v-container
 				v-if="viewMode === 'grid'"
 				fluid
@@ -121,7 +124,7 @@
 												:src="item.thumbnail_url"
 												:lazy-src="placeholderImage"
 												cover
-												width="100%"
+												width="140"
 												:aspect-ratio="16 / 9"
 												v-bind="props"
 											/>
@@ -178,6 +181,25 @@
 															</v-tooltip>
 															<v-icon />
 														</v-btn>
+
+														<v-btn
+															v-if="!item.randomPlaylist"
+															class="mx-2"
+															icon="mdi-trash-can"
+															size="large"
+															color="red-darken-1"
+															variant="flat"
+															@click="openDeleteDialog(item)"
+														>
+															<v-tooltip
+																activator="parent"
+																location="top"
+																:eager="false"
+															>
+																Delete Playlist
+															</v-tooltip>
+															<v-icon />
+														</v-btn>
 													</v-row>
 
 													<v-spacer />
@@ -210,9 +232,8 @@
 
 			<v-card
 				v-if="viewMode === 'list'"
-				class="mx-4 mb-4"
+				class="mx-4 mb-4 h-100"
 				flat
-				style="height: 70vh;"
 			>
 				<v-virtual-scroll
 					:items="sortedPlaylists"
@@ -249,6 +270,7 @@
 										icon="mdi-clock-outline"
 										variant="text"
 										color="orange-darken-4"
+										class="mr-1"
 										:disabled="!item.videoCount"
 										@click="openQueuePlaylistDialog(item)"
 									>
@@ -265,6 +287,7 @@
 										icon="mdi-file-edit"
 										variant="text"
 										color="green-darken-1"
+										class="mr-1"
 										:to="{
 											name: item.randomPlaylist ? 'random-playlist-view' : 'playlist-view',
 											params: { id: item?.id },
@@ -277,6 +300,22 @@
 											Edit Playlist
 										</v-tooltip>
 										<v-icon>mdi-file-edit</v-icon>
+									</v-btn>
+
+									<v-btn
+										v-if="!item.randomPlaylist"
+										icon="mdi-trash-can"
+										variant="text"
+										color="red-darken-1"
+										@click="openDeleteDialog(item)"
+									>
+										<v-tooltip
+											activator="parent"
+											location="top"
+										>
+											Delete Playlist
+										</v-tooltip>
+										<v-icon>mdi-trash-can</v-icon>
 									</v-btn>
 								</div>
 							</template>
@@ -524,6 +563,41 @@
 		</v-card>
 	</v-dialog>
 
+	<v-dialog
+		v-model="deleteDialog"
+		width="auto"
+	>
+		<v-card>
+			<v-card-title>Deleting Playlist</v-card-title>
+			<v-card-text>
+				Do you really want to delete the playlist "{{ deletingPlaylist.title }}"?
+				<v-checkbox
+					v-if="deletingPlaylist.videoCount > 0"
+					v-model="forceDelete"
+					label="Force delete (playlist contains videos)"
+				/>
+			</v-card-text>
+			<v-card-actions>
+				<v-spacer />
+				<v-btn
+					color="red-darken-1"
+					variant="text"
+					@click="deleteDialog = false"
+				>
+					Cancel
+				</v-btn>
+				<v-btn
+					color="green-darken-1"
+					variant="text"
+					:loading="isLoading"
+					@click="deletePlaylistConfirmed"
+				>
+					Delete
+				</v-btn>
+			</v-card-actions>
+		</v-card>
+	</v-dialog>
+
 	<v-snackbar
 		v-model="snackbar"
 		timeout="3000"
@@ -698,13 +772,27 @@ const chunkedPlaylists = computed(() => {
 	let chunk = 6;
 
 	switch (name.value) {
-		case 'xs': chunk = 2; break;
-		case 'sm': chunk = 2; break;
-		case 'md': chunk = 4; break;
-		case 'lg': chunk = 6; break;
-		case 'xl': chunk = 8; break;
-		case 'xxl': chunk = 12; break;
-		default: chunk = 12; break;
+		case 'xs':
+			chunk = 2;
+			break;
+		case 'sm':
+			chunk = 2;
+			break;
+		case 'md':
+			chunk = 4;
+			break;
+		case 'lg':
+			chunk = 6;
+			break;
+		case 'xl':
+			chunk = 8;
+			break;
+		case 'xxl':
+			chunk = 12;
+			break;
+		default:
+			chunk = 12;
+			break;
 	}
 
 	return _.chunk(sortedPlaylists.value, chunk);
@@ -777,6 +865,38 @@ const importPlaylist = async () => {
 
 		snackbar.value = true;
 		snackbarText.value = 'Successfully imported playlist.';
+	}
+	catch (error) {
+		const message = await error.response.text();
+
+		snackbar.value = true;
+		snackbarText.value = message;
+	}
+};
+
+const deleteDialog = ref(false);
+const deletingPlaylist = ref({});
+const forceDelete = ref(false);
+
+const openDeleteDialog = (playlist) => {
+	deletingPlaylist.value = playlist;
+	forceDelete.value = false;
+	deleteDialog.value = true;
+};
+
+const deletePlaylistConfirmed = async () => {
+	try {
+		await ky.post(`playlists/id/${deletingPlaylist.value.id}/delete`, {
+			json: {
+				force: forceDelete.value,
+			},
+		}).json();
+
+		await fetchPlaylists();
+
+		deleteDialog.value = false;
+		snackbar.value = true;
+		snackbarText.value = 'Successfully deleted playlist.';
 	}
 	catch (error) {
 		const message = await error.response.text();
