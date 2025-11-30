@@ -709,7 +709,9 @@
 							label="Add To Random Playlist"
 						/>
 					</v-row>
-					<v-row>
+					<v-row
+						class="mb-0 mt-6"
+					>
 						<v-btn
 							color="green-darken-1"
 							variant="text"
