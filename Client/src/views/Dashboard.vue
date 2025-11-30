@@ -247,6 +247,7 @@
 									<template #default="{ item }">
 										<v-list-item
 											class="py-4"
+											link
 										>
 											<v-list-item-title>
 												{{ item.title }}

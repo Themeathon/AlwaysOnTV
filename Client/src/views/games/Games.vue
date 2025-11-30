@@ -184,6 +184,7 @@
 					<template #default="{ item }">
 						<v-list-item
 							class="draggable-item py-2 mb-1 rounded"
+							link
 							:class="{
 								'drag-source': draggedItem && draggedItem.id === item.id,
 								'drag-target': dragOverItem && dragOverItem.id === item.id && draggedItem && draggedItem.id !== item.id

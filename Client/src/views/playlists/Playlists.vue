@@ -273,7 +273,9 @@
 					item-height="90"
 				>
 					<template #default="{ item }">
-						<v-list-item class="py-2">
+						<v-list-item class="py-2"
+							link
+						>
 							<template #prepend>
 								<v-img
 									:src="item.thumbnail_url || placeholderImage"

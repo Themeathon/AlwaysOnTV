@@ -1,6 +1,7 @@
 <template>
 	<v-list-item
 		class="draggable-item py-2 mb-1 rounded"
+		link
 		:class="{
 			'drag-source': isDragSource,
 			'drag-target': isDragTarget
