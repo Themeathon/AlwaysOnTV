@@ -6,33 +6,39 @@ Always On TV is a powerful tool that allows you to manage YouTube videos and pla
 
 ## Features
 
-- Video and Playlist Management: Easily organize and manage your YouTube videos and playlists within Always On TV.
-- Queue System: Queue videos and playlists that will play continuously. Once the queue is empty, Always On TV can randomly select videos from a default playlist.
-- Twitch Integration: Always On TV automatically updates your Twitch streaming title and game based on the currently playing video. This feature requires a Twitch connection to be set up.
+- **Video and Playlist Management:** Easily organize and manage your YouTube videos and playlists within Always On TV.
+- **Queue System:** Queue videos and playlists that will play continuously. Once the queue is empty, Always On TV can randomly select videos from a default playlist.
+- **Local File Support:** Scan and add video files directly from your server's local storage. The system automatically detects video duration and generates thumbnails using FFmpeg.
+- **Twitch Integration:** Always On TV automatically updates your Twitch streaming title and game based on the currently playing video. This feature requires a Twitch connection to be set up.
 
 ## Installation
 
-To install Always On TV, follow these steps:
+### Prerequisites
+- [Node.js](https://nodejs.org/) (Version 22 or higher recommended)
+- [NPM](https://www.npmjs.com/) (usually included with Node.js)
 
-1. Download the [latest release](https://github.com/Themeathon/AlwaysOnTV/releases/latest) from the Releases page.
-2. Extract it into a directory of your choice.
-3. Open a terminal or command prompt and navigate to the extracted directory.
-4. Run the following command to install the required dependencies:
+### Quick Start (Automated)
+
+To make installation as easy as possible, we have provided an automated script that handles the installation of dependencies for both the Client and Server, builds the frontend, and copies the necessary files to the server.
+
+1. Download the [latest release](https://github.com/Themeathon/AlwaysOnTV/releases/latest) or clone the repository.
+2. Open a terminal or command prompt in the **project root directory** (where the `Client` and `Server` folders are located).
+3. Run the following command:
+   ```bash
+   npm run setup
    ```
-   npm install
-   ```
+*This command will install all dependencies, build the frontend, and copy the necessary files to the server.*
    
 ## Usage
 
 To start Always On TV, follow these steps:
 
-1. Ensure you have completed the installation procedure.
-2. In the terminal or command prompt, navigate to the project directory.
-3. Run the following command to start Always On TV:
+1. Ensure you have completed the installation procedure above.
+2. In the terminal (in the project root directory), run:
    ```
    npm start
    ```
-   By default, Always On TV starts a web server on ports 8085. You can configure th port in the `config.json` file.
+   By default, Always On TV starts a web server on ports **8085**. You can configure th port in the `Server/config.json` file.
 
 The first time you launch Always On TV, a default configuration will be created. The default password to access the web interface is "AlwaysOnTV," but you can change it in the `config.json` file.
 
@@ -40,7 +46,7 @@ The first time you launch Always On TV, a default configuration will be created.
 
 To access the Always On TV web interface, follow these steps:
 
-1. Ensure Always On TV is running.
+1. Ensure Always On TV is running. (`npm start`).
 2. Open your web browser and navigate to `localhost:8085` (or the port set in the `config.json` file).
 
 ### Twitch Integration
