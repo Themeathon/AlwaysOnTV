@@ -2,7 +2,7 @@
 	<div class="d-flex flex-column h-100">
 		<div class="pa-8 text-center">
 			<v-btn
-				olor="primary"
+				color="primary"
 				variant="outlined"
 				prepend-icon="mdi-plus"
 				@click="openCreateGameDialog"
@@ -140,7 +140,6 @@
 																</v-tooltip>
 																<v-icon>mdi-movie-open-plus</v-icon>
 															</v-btn>
-
 															<v-btn
 																class="mx-2"
 																icon="mdi-trash-can"
@@ -183,8 +182,27 @@
 					item-height="120"
 				>
 					<template #default="{ item }">
-						<v-list-item class="py-2">
+						<v-list-item
+							class="draggable-item py-2 mb-1 rounded"
+							:class="{
+								'drag-source': draggedItem && draggedItem.id === item.id,
+								'drag-target': dragOverItem && dragOverItem.id === item.id && draggedItem && draggedItem.id !== item.id
+							}"
+							draggable="true"
+							@dragstart="onDragStart($event, item)"
+							@dragenter.prevent="onDragEnter(item)"
+							@dragover.prevent
+							@dragend="onDragEnd"
+							@drop="onDrop($event, item)"
+						>
 							<template #prepend>
+								<v-icon
+									class="mr-4 cursor-grab"
+									color="grey-darken-1"
+								>
+									mdi-drag-horizontal-variant
+								</v-icon>
+
 								<v-img
 									:src="item.thumbnail_url || placeholderImage"
 									:lazy-src="placeholderImage"
@@ -263,7 +281,6 @@
 			<v-card-title>
 				<span class="text-h5">Add a new game</span>
 			</v-card-title>
-
 			<v-card-text>
 				<v-row>
 					<v-text-field
@@ -281,18 +298,14 @@
 				</v-row>
 				<v-row class="mt-2">
 					<v-col class="text-caption">
-						To find the correct Twitch Category ID, you can use this page:
-						<a
+						To find the correct Twitch Category ID, you can use this page: <a
 							href="https://aquillium.com/get-twitch-category-id/"
 							target="_blank"
 							rel="noopener"
-						>
-							aquillium.com/get-twitch-category-id
-						</a>
+						>aquillium.com/get-twitch-category-id</a>
 					</v-col>
 				</v-row>
 			</v-card-text>
-
 			<v-card-text
 				class="mt-4"
 				style="position: relative; height: 800px;"
@@ -311,11 +324,9 @@
 							<v-list-item-title class="text-h5 font-weight-bold">
 								{{ item.name }}
 							</v-list-item-title>
-
 							<v-list-item-subtitle v-if="item.isAdded">
 								Already added
 							</v-list-item-subtitle>
-
 							<template #prepend>
 								<v-img
 									:src="bigThumbnail(item.cover.url)"
@@ -330,7 +341,6 @@
 					</template>
 				</v-virtual-scroll>
 			</v-card-text>
-
 			<v-card-actions>
 				<div class="d-flex flex-column text-center">
 					<v-checkbox
@@ -345,12 +355,8 @@
 						hide-details
 						density="compact"
 					/>
-					<span v-if="filteredSearchedGames.length">
-						Found {{ filteredSearchedGames.length }} games ({{ filteredSearchedGames.filter(g => g.isAdded).length }} already added)
-					</span>
-					<span v-else>
-						No games were found with that name or ID
-					</span>
+					<span v-if="filteredSearchedGames.length">Found {{ filteredSearchedGames.length }} games ({{ filteredSearchedGames.filter(g => g.isAdded).length }} already added)</span>
+					<span v-else>No games were found with that name or ID</span>
 				</div>
 				<v-spacer />
 				<v-btn
@@ -369,12 +375,8 @@
 		width="auto"
 	>
 		<v-card>
-			<v-card-title>
-				Deleting {{ deletingGame.title }}
-			</v-card-title>
-			<v-card-text>
-				Do you really want to delete {{ deletingGame.title }}?
-			</v-card-text>
+			<v-card-title>Deleting {{ deletingGame.title }}</v-card-title>
+			<v-card-text>Do you really want to delete {{ deletingGame.title }}?</v-card-text>
 			<v-card-actions>
 				<v-spacer />
 				<v-btn
@@ -401,7 +403,6 @@
 		timeout="3000"
 	>
 		{{ snackbarText }}
-
 		<template #actions>
 			<v-btn
 				color="blue"
@@ -415,14 +416,14 @@
 </template>
 
 <script setup>
-import ky, { isLoading } from '@/ky';
+import ky, {isLoading} from '@/ky';
 import _ from 'lodash';
-import { onMounted, ref, watch, computed } from 'vue';
-import { useDisplay } from 'vuetify';
+import {computed, onMounted, ref, watch} from 'vue';
+import {useDisplay} from 'vuetify';
 
 import placeholderImage from '@/assets/placeholder-500x700.jpg';
-
 import SelectVideoDialog from '@/composables/SelectVideoDialog.vue';
+import snackbarText from 'lodash/seq';
 
 const createGameDialog = ref(false);
 const games = ref([]);
@@ -430,8 +431,60 @@ const searchedGames = ref([]);
 const searchErrorMessages = ref('');
 const checkboxShowAdded = ref(false);
 const addMultipleGames = ref(false);
-
 const viewMode = ref(localStorage.getItem('games_view_mode') || 'grid');
+
+const draggedItem = ref(null);
+const dragOverItem = ref(null);
+
+const onDragStart = (event, item) => {
+	draggedItem.value = item;
+	event.dataTransfer.effectAllowed = 'move';
+};
+
+const onDragEnter = (item) => {
+	if (item.id !== draggedItem.value?.id) {
+		dragOverItem.value = item;
+	}
+};
+
+const onDragEnd = () => {
+	draggedItem.value = null;
+	dragOverItem.value = null;
+};
+
+const onDrop = (event, targetItem) => {
+	const sourceItem = draggedItem.value;
+	if (!sourceItem || sourceItem.id === targetItem.id) {
+		onDragEnd();
+		return;
+	}
+	moveGame(sourceItem, targetItem);
+	onDragEnd();
+};
+
+const moveGame = async (sourceItem, targetItem) => {
+	const newIndex = sortedGames.value.findIndex(g => g.id === targetItem.id) + 1;
+
+	try {
+		isLoading.value = true;
+		await ky.post('games/order', {
+			json: {
+				id: sourceItem.id,
+				newIndex: newIndex,
+			},
+		}).json();
+
+		await fetchGames();
+		snackbarText.value = 'Game moved successfully.';
+		snackbar.value = true;
+	} catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbarText.value = message;
+		snackbar.value = true;
+	} finally {
+		isLoading.value = false;
+	}
+};
 
 watch(viewMode, (newValue) => {
 	localStorage.setItem('games_view_mode', newValue);
@@ -450,58 +503,40 @@ const assignGameToVideos = async (videos) => {
 
 	try {
 		isLoading.value = true;
-
 		let successCount = 0;
 		let failCount = 0;
 
 		for (const video of videos) {
 			try {
-				await ky.post(`videos/id/${video.id}`, {
-					json: {
-						gameId: gameForAssignment.value.id,
-					},
-				}).json();
+				await ky.post(`videos/id/${video.id}`, { json: { gameId: gameForAssignment.value.id } }).json();
 				successCount++;
 			} catch (e) {
 				console.error(e);
 				failCount++;
 			}
 		}
-
 		await fetchGames();
-
-		if (failCount > 0) {
-			snackbarText.value = `Assigned game to ${successCount} videos. Failed: ${failCount}.`;
-		} else {
-			snackbarText.value = `Successfully assigned game "${gameForAssignment.value.title}" to ${successCount} videos.`;
-		}
+		snackbarText.value = failCount > 0
+			? `Assigned game to ${successCount} videos. Failed: ${failCount}.`
+			: `Successfully assigned game "${gameForAssignment.value.title}" to ${successCount} videos.`;
 		snackbar.value = true;
-
 	} catch (error) {
 		const message = await error.response?.text() || error.message;
 		snackbarText.value = message;
 		snackbar.value = true;
 	} finally {
 		isLoading.value = false;
-		gameForAssignment.value = null; // Reset
+		gameForAssignment.value = null;
 	}
 };
 
 const filteredSearchedGames = computed(() => {
 	const filtered = [];
-
 	for (const game of searchedGames.value) {
 		let isAdded = false;
-
-		if (games.value.some(otherGame => otherGame.id === findTwitchGameID(game)))
-			isAdded = true;
-
-		filtered.push({
-			...game,
-			isAdded,
-		});
+		if (games.value.some(otherGame => otherGame.id === findTwitchGameID(game))) isAdded = true;
+		filtered.push({ ...game, isAdded });
 	}
-
 	return filtered;
 });
 
@@ -515,16 +550,10 @@ const findTwitchGameID = igdbGame => {
 
 const deleteDialog = ref(false);
 const deletingGame = ref(false);
-
 const gameSearch = ref('');
 const page = ref(1);
 
-watch(deletingGame, (newValue) => {
-	deleteDialog.value = !!newValue;
-});
-
-const snackbar = ref(false);
-const snackbarText = ref('');
+watch(deletingGame, (newValue) => { deleteDialog.value = !!newValue; });
 
 const { name } = useDisplay();
 
@@ -537,7 +566,6 @@ const sortedGames = computed(() => {
 
 const chunkedGames = computed(() => {
 	let chunk = 6;
-
 	switch (name.value) {
 	case 'xs': chunk = 4; break;
 	case 'sm': chunk = 6; break;
@@ -547,13 +575,11 @@ const chunkedGames = computed(() => {
 	case 'xxl': chunk = 12; break;
 	default: chunk = 12; break;
 	}
-
 	return _.chunk(sortedGames.value, chunk);
 });
 
 watch(chunkedGames, (newValue) => {
-	if (page.value >= newValue.length)
-		page.value = Math.max(1, newValue.length);
+	if (page.value >= newValue.length) page.value = Math.max(1, newValue.length);
 });
 
 const fetchGames = async () => {
@@ -570,11 +596,7 @@ const openCreateGameDialog = () => {
 
 const addNewGame = async (igdbGame) => {
 	const twitchGameID = findTwitchGameID(igdbGame);
-
-	// Check if the game already exists in the list
-	const isDuplicate = games.value.some(
-		(game) => game.title === igdbGame.name || game.id === twitchGameID,
-	);
+	const isDuplicate = games.value.some((game) => game.title === igdbGame.name || game.id === twitchGameID);
 
 	if (isDuplicate) {
 		console.error('Game already exists.');
@@ -582,96 +604,72 @@ const addNewGame = async (igdbGame) => {
 	}
 
 	try {
-		await ky
-			.put('games', {
-				json: {
-					igdbGameId: `${igdbGame.id}`,
-				},
-			})
-			.json();
-
+		await ky.put('games', { json: { igdbGameId: `${igdbGame.id}` } }).json();
 		await fetchGames();
-
-		if (!addMultipleGames.value) {
-			createGameDialog.value = false;
-		}
-
-		snackbar.value = true;
+		if (!addMultipleGames.value) createGameDialog.value = false;
 		snackbarText.value = 'Successfully added game.';
-	}
-	catch (error) {
-		const message = await error.response.text();
-
 		snackbar.value = true;
+	} catch (error) {
+		const message = await error.response.text();
 		snackbarText.value = message;
+		snackbar.value = true;
 	}
 };
 
-const openDeleteDialog = item => {
-	deletingGame.value = item;
-};
+const openDeleteDialog = item => { deletingGame.value = item; };
 
 const deleteGame = async (game) => {
 	try {
-		await ky.post(`games/id/${game.id}/delete`, {
-			json: {
-				force: game.videoCount > 0,
-			},
-		}).json();
-
+		await ky.post(`games/id/${game.id}/delete`, { json: { force: game.videoCount > 0 } }).json();
 		await fetchGames();
-
-		snackbar.value = true;
 		snackbarText.value = 'Successfully deleted game.';
-
-		deleteDialog.value = false;
-	}
-	catch (error) {
-		const message = await error.response.text();
-
 		snackbar.value = true;
+		deleteDialog.value = false;
+	} catch (error) {
+		const message = await error.response.text();
 		snackbarText.value = message;
+		snackbar.value = true;
 	}
 };
 
 const searchInput = ref('');
+watch(searchInput, (newValue) => { if (newValue) searchForGameOnTwitch(); });
 
-watch(searchInput, (newValue) => {
-	if (newValue === '') return;
-
-	searchForGameOnTwitch();
-});
-
-const bigThumbnail = url => {
-	return url.replace('t_thumb', 't_cover_big');
-};
+const bigThumbnail = url => url.replace('t_thumb', 't_cover_big');
 
 const searchForGameOnTwitch = _.debounce(async () => {
 	searchErrorMessages.value = '';
-
 	const searchTerm = searchInput.value.toLocaleLowerCase();
-
 	try {
-
-		const games = await ky
-			.post('twitch/search-games', {
-				json: {
-					name: searchTerm,
-				},
-			})
-			.json();
-
-		if (!games.length) {
+		const result = await ky.post('twitch/search-games', { json: { name: searchTerm } }).json();
+		if (!result.length) {
 			searchErrorMessages.value = 'No games were found with that name';
 			return;
 		}
-
-		searchedGames.value = games;
+		searchedGames.value = result;
 	} catch (error) {
-		const message = await error.response.text();
-
+		snackbarText.value = await error.response.text();
 		snackbar.value = true;
-		snackbarText.value = message;
 	}
 }, 500);
 </script>
+
+<style scoped>
+.cursor-grab { cursor: grab; }
+.cursor-grab:active { cursor: grabbing; }
+.draggable-item {
+	transition: all 0.2s ease-in-out;
+	border: 2px solid transparent !important;
+}
+.drag-source {
+	opacity: 0.4;
+	background-color: #E0E0E0;
+	box-shadow: none !important;
+}
+.drag-target {
+	border-color: rgb(var(--v-theme-primary)) !important;
+	background-color: rgba(var(--v-theme-primary), 0.08);
+	transform: scale(1.005);
+	z-index: 1;
+}
+</style>

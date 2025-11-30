@@ -9,21 +9,35 @@ class GameDatabase extends AbstractDatabase {
 	async createTable () {
 		super.createTable();
 
-		if (await this.doesTableExist()) return;
+		if (!(await this.doesTableExist())) {
+			await this.knex.schema.createTable(this.table_name, table => {
+				table.string('id').primary().notNullable().defaultTo(null).comment('Twitch Game ID');
+				table.timestamp('created_at').notNullable().defaultTo(this.knex.fn.now()).comment('Game Creation Date');
+				table.string('title').notNullable().defaultTo(null).comment('Twitch Game Title');
+				table.string('thumbnail_url').notNullable().defaultTo(null).comment('Game Thumbnail URL');
+				table.integer('index').notNullable().defaultTo(0).comment('Custom Sort Order');
+			});
 
-		await this.knex.schema.createTable(this.table_name, table => {
-			table.string('id').primary().notNullable().defaultTo(null).comment('Twitch Game ID');
+			// Add a default game
+			await this.createGame('499973', 'Always On', 'https://static-cdn.jtvnw.net/ttv-boxart/499973-500x700.jpg');
+			await this.createGame('27284', 'Retro', 'https://static-cdn.jtvnw.net/ttv-boxart/27284-144x192.jpg');
+		}
 
-			table.timestamp('created_at').notNullable().defaultTo(this.knex.fn.now()).comment('Game Creation Date');
+		// MIGRATION if index table misses
+		const hasIndex = await this.knex.schema.hasColumn(this.table_name, 'index');
+		if (!hasIndex) {
+			pino.info('Migrating games table: adding index column...');
+			await this.knex.schema.table(this.table_name, table => {
+				table.integer('index').notNullable().defaultTo(0);
+			});
 
-			table.string('title').notNullable().defaultTo(null).comment('Twitch Game Title');
-
-			table.string('thumbnail_url').notNullable().defaultTo(null).comment('Game Thumbnail URL');
-		});
-
-		// Add a default game
-		await this.createGame('499973', 'Always On', 'https://static-cdn.jtvnw.net/ttv-boxart/499973-500x700.jpg');
-		await this.createGame('27284', 'Retro', 'https://static-cdn.jtvnw.net/ttv-boxart/27284-144x192.jpg');
+			const games = await this.getKnex().select('id').orderBy('title');
+			let i = 1;
+			for(const game of games) {
+				await this.update({ id: game.id }, { index: i++ });
+			}
+			pino.info('Migration complete.');
+		}
 	}
 
 	getDefaultGameID () {
@@ -36,11 +50,12 @@ class GameDatabase extends AbstractDatabase {
 				'games.id as id',
 				'games.title as title',
 				'games.thumbnail_url as thumbnail_url',
+				'games.index as index',
 			)
 			.leftJoin('videos', 'games.id', 'videos.gameId')
 			.groupBy('games.id')
 			.count('videos.id as videoCount')
-			.orderBy('games.title', orderBy);
+			.orderBy('games.index', 'asc');
 	}
 
 	async getGamesByName (title) {
@@ -49,11 +64,20 @@ class GameDatabase extends AbstractDatabase {
 				'games.id as id',
 				'games.title as title',
 				'games.thumbnail_url as thumbnail_url',
+				'games.index as index',
 			)
 			.whereRaw('LOWER(games.title) LIKE LOWER(?)', `%${title}%`)
 			.leftJoin('videos', 'games.id', 'videos.gameId')
 			.groupBy('games.id')
-			.count('videos.id as videoCount');
+			.count('videos.id as videoCount')
+			.orderBy('games.index', 'asc');
+	}
+
+	async getLatestIndex () {
+		const result = await this.getKnex()
+			.max('index as maxIndex')
+			.first();
+		return result?.maxIndex || 0;
 	}
 
 	async createGame (id, title, thumbnail_url) {
@@ -63,10 +87,13 @@ class GameDatabase extends AbstractDatabase {
 			return false;
 		}
 
+		const nextIndex = (await this.getLatestIndex()) + 1;
+
 		await this.insert({
 			id,
 			title,
 			thumbnail_url,
+			index: nextIndex,
 		});
 
 		return super.getByID(id);
@@ -98,7 +125,6 @@ class GameDatabase extends AbstractDatabase {
 		if (force) {
 			try {
 				await this.knex.transaction(async trx => {
-					// Update all videos that have this game ID to our default
 					await trx('videos')
 						.where('gameId', id)
 						.update({
@@ -113,9 +139,56 @@ class GameDatabase extends AbstractDatabase {
 			}
 		}
 
-		return this.delete({
-			id,
-		});
+		const result = await this.delete({ id });
+
+		await this.fixIndices();
+
+		return result;
+	}
+
+	async fixIndices() {
+		const games = await this.getKnex().select('id').orderBy('index', 'asc');
+		let i = 1;
+		for (const game of games) {
+			await this.update({ id: game.id }, { index: i++ });
+		}
+	}
+
+	async moveGame (gameId, newIndex) {
+		const game = await this.getByID(gameId);
+		if (!game) return false;
+
+		const oldIndex = game.index;
+		if (oldIndex === newIndex) return true;
+
+		try {
+			await this.knex.transaction(async trx => {
+				await trx(this.table_name)
+					.where({ id: gameId })
+					.update({ index: -1 });
+
+				if (newIndex < oldIndex) {
+					await trx(this.table_name)
+						.whereBetween('index', [newIndex, oldIndex - 1])
+						.increment('index', 1);
+				} else {
+					await trx(this.table_name)
+						.whereBetween('index', [oldIndex + 1, newIndex])
+						.decrement('index', 1);
+				}
+
+				await trx(this.table_name)
+					.where({ id: gameId })
+					.update({ index: newIndex });
+			});
+
+			await this.fixIndices();
+			return true;
+		} catch (error) {
+			pino.error('Error in GameDatabase.moveGame');
+			pino.error(error);
+			return false;
+		}
 	}
 }
 

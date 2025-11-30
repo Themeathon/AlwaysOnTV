@@ -12,7 +12,7 @@
 		@dragend="onDragEnd"
 		@drop="onDrop"
 	>
-		<v-list-item-title>
+		<v-list-item-title class="text-wrap">
 			{{ item.title }}
 		</v-list-item-title>
 
@@ -32,7 +32,10 @@
 				mdi-drag-horizontal-variant
 			</v-icon>
 
-			<span class="mr-5 text-center font-weight-bold" style="min-width: 20px;">
+			<span
+				class="mr-5 text-center font-weight-bold"
+				style="min-width: 20px;"
+			>
 				{{ index + 1 }}
 			</span>
 

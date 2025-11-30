@@ -6,6 +6,7 @@ import GetAllGames from '~/api/games/GetAllGames.js';
 import GetGameByID from '~/api/games/GetGameByID.js';
 import GetGamesByName from '~/api/games/GetGamesByName.js';
 import UpdateGameByID from '~/api/games/UpdateGameByID.js';
+import UpdateGameOrder from '~/api/games/UpdateGameOrder.js';
 
 class GameRouter extends AbstractRouter {
 	constructor () {
@@ -22,6 +23,7 @@ class GameRouter extends AbstractRouter {
 		router.put('/', ...AddGame);
 
 		router.post('/name', ...GetGamesByName);
+		router.post('/order', ...UpdateGameOrder);
 
 		router.get('/id/:id', ...GetGameByID);
 		router.post('/id/:id', ...UpdateGameByID);
