@@ -45,6 +45,20 @@
 				>
 					{{ selectionMode ? 'Stop' : 'Select' }}
 				</v-btn>
+
+				<v-btn
+					v-if="selectionMode"
+					color="blue-grey"
+					variant="text"
+					class="mx-2"
+					@click="toggleSelectAllVisible"
+				>
+					<v-icon start>
+						{{ areAllVisibleSelected ? 'mdi-checkbox-multiple-blank-outline' : 'mdi-checkbox-multiple-marked' }}
+					</v-icon>
+					{{ areAllVisibleSelected ? 'Deselect All' : 'Select All' }}
+				</v-btn>
+
 				<v-btn
 					v-if="selectionMode"
 					color="orange"
@@ -56,7 +70,61 @@
 				>
 					Add ({{ selectedVideoIds.length }})
 				</v-btn>
+
+				<v-btn
+					v-if="selectionMode"
+					color="red"
+					variant="flat"
+					prepend-icon="mdi-delete"
+					:disabled="selectedVideoIds.length === 0"
+					class="mx-2"
+					@click="openBulkDeleteDialog"
+				>
+					Delete ({{ selectedVideoIds.length }})
+				</v-btn>
 			</v-col>
+
+			<v-dialog
+				v-model="deleteDialog"
+				width="auto"
+			>
+				<v-card>
+					<v-card-title>
+						Deleting {{ isDeletingMultiple ? `${selectedVideoIds.length} videos` : deletingVideo.title }}
+					</v-card-title>
+					<v-card-text>
+            <span v-if="isDeletingMultiple">
+                Do you really want to delete these {{ selectedVideoIds.length }} videos?
+            </span>
+						<span v-else>
+                Do you really want to delete "{{ deletingVideo.title }}"?
+            </span>
+
+						<v-checkbox
+							v-model="forceDelete"
+							label="Force delete (removes from all playlists and random list)"
+						/>
+					</v-card-text>
+					<v-card-actions>
+						<v-spacer />
+						<v-btn
+							color="red-darken-1"
+							variant="text"
+							@click="closeDeleteDialog"
+						>
+							Cancel
+						</v-btn>
+						<v-btn
+							color="green-darken-1"
+							variant="text"
+							:loading="isLoading"
+							@click="confirmDelete"
+						>
+							Delete
+						</v-btn>
+					</v-card-actions>
+				</v-card>
+			</v-dialog>
 
 			<v-col
 				cols="12"
@@ -986,8 +1054,17 @@ watch(viewMode, (newValue) => {
 	localStorage.setItem('videos_view_mode', newValue);
 });
 
-const sortBy = ref('created_at');
-const sortDesc = ref(true);
+const sortBy = ref(localStorage.getItem('videos_sort_by') || 'created_at');
+
+watch(sortBy, (newValue) => {
+	localStorage.setItem('videos_sort_by', newValue);
+});
+
+const sortDesc = ref(localStorage.getItem('videos_sort_desc') === 'true');
+
+watch(sortDesc, (newValue) => {
+	localStorage.setItem('videos_sort_desc', newValue);
+});
 
 const sortOptions = [
 	{ title: 'Date Added', value: 'created_at' },
@@ -1024,6 +1101,7 @@ const thumbnailFile = ref(null);
 const deleteDialog = ref(false);
 const deletingVideo = ref({});
 const forceDelete = ref(false);
+const isDeletingMultiple = ref(false);
 
 const addToPlaylistDialog = ref(false);
 const selectedVideoForPlaylist = ref({});
@@ -1091,6 +1169,22 @@ const sortedVideos = computed(() => {
 		return 0;
 	});
 });
+
+const areAllVisibleSelected = computed(() => {
+	if (sortedVideos.value.length === 0) return false;
+	return sortedVideos.value.every(video => selectedVideoIds.value.includes(video.id));
+});
+
+const toggleSelectAllVisible = () => {
+	const visibleIds = sortedVideos.value.map(v => v.id);
+
+	if (areAllVisibleSelected.value) {
+		selectedVideoIds.value = selectedVideoIds.value.filter(id => !visibleIds.includes(id));
+	} else {
+		const newSet = new Set([...selectedVideoIds.value, ...visibleIds]);
+		selectedVideoIds.value = Array.from(newSet);
+	}
+};
 
 const chunkedVideos = computed(() => {
 	let chunk = 6;
@@ -1344,7 +1438,14 @@ const editVideo = async (videoId) => {
 	}
 };
 
+const openBulkDeleteDialog = () => {
+	isDeletingMultiple.value = true;
+	forceDelete.value = false;
+	deleteDialog.value = true;
+};
+
 const openDeleteDialog = (video) => {
+	isDeletingMultiple.value = false;
 	deletingVideo.value = video;
 	forceDelete.value = false;
 	deleteDialog.value = true;
@@ -1353,6 +1454,76 @@ const openDeleteDialog = (video) => {
 const closeDeleteDialog = () => {
 	deleteDialog.value = false;
 	deletingVideo.value = {};
+	isDeletingMultiple.value = false;
+};
+
+const confirmDelete = async () => {
+	if (isDeletingMultiple.value) {
+		await deleteSelectedVideos();
+	} else {
+		await deleteSingleVideo(deletingVideo.value.id);
+	}
+};
+
+const deleteSingleVideo = async (videoId) => {
+	try {
+		isLoading.value = true;
+
+		await ky.post(`videos/id/${videoId}/delete`, {
+			json: {
+				force: forceDelete.value,
+			},
+		}).json();
+
+		await fetchVideos();
+		closeDeleteDialog();
+		showSnackbar('Successfully deleted video.');
+
+	} catch (error) {
+		showSnackbar(`Error deleting video: ${await error?.response?.text() || error.message}`);
+	} finally {
+		isLoading.value = false;
+	}
+};
+
+const deleteSelectedVideos = async () => {
+	try {
+		isLoading.value = true;
+
+		let successCount = 0;
+		let failCount = 0;
+
+		for (const videoId of selectedVideoIds.value) {
+			try {
+				await ky.post(`videos/id/${videoId}/delete`, {
+					json: {
+						force: forceDelete.value,
+					},
+				}).json();
+				successCount++;
+			} catch (e) {
+				console.error(`Failed to delete video ${videoId}`, e);
+				failCount++;
+			}
+		}
+
+		await fetchVideos();
+
+		closeDeleteDialog();
+		selectedVideoIds.value = [];
+		selectionMode.value = false;
+
+		if (failCount > 0) {
+			showSnackbar(`Deleted ${successCount} videos. Failed to delete ${failCount} videos.`);
+		} else {
+			showSnackbar(`Successfully deleted ${successCount} videos.`);
+		}
+
+	} catch (error) {
+		showSnackbar(`Error during bulk delete: ${error.message}`);
+	} finally {
+		isLoading.value = false;
+	}
 };
 
 const deleteVideo = async (videoId) => {
