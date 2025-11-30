@@ -61,14 +61,28 @@
 				<v-card-text
 					id="virtualScrollOuter"
 					style="position: relative; height:100%;"
+					class="pa-2"
 				>
 					<v-virtual-scroll
 						style="position: absolute; left: 0; right: 0; top: 0; bottom: 0;"
 						:items="videos"
 						item-height="100"
+						class="px-2"
 					>
 						<template #default="{ item }">
-							<v-list-item>
+							<v-list-item
+								class="draggable-item mb-1 rounded"
+								:class="{
+									'drag-source': draggedItem && draggedItem.index === item.index,
+									'drag-target': dragOverIndex === item.index && draggedItem && draggedItem.index !== item.index
+								}"
+								draggable="true"
+								@dragstart="onDragStart($event, item)"
+								@dragenter.prevent="onDragEnter(item)"
+								@dragover.prevent
+								@dragend="onDragEnd"
+								@drop="onDrop($event, item)"
+							>
 								<v-list-item-title>
 									{{ playlistData.videoInfo[item.id].title }}
 								</v-list-item-title>
@@ -82,30 +96,38 @@
 								</v-list-item-subtitle>
 
 								<template #prepend>
-									<div class="mx-5 text-center">
-										<span
-											class="text-center"
-										>
+									<v-icon
+										class="mr-4 cursor-grab"
+										color="grey-darken-1"
+									>
+										mdi-drag-horizontal-variant
+									</v-icon>
+
+									<div
+										class="mx-2 text-center"
+										style="min-width: 30px;"
+									>
+										<span class="text-center font-weight-bold">
 											{{ item.index }}
 										</span>
-
-										<v-btn
-											icon="mdi-file-edit"
-											size="x-small"
-											variant="tonal"
-											class="ml-5"
-											@click="openEditPositionDialog(item.index)"
-										>
-											<v-tooltip
-												activator="parent"
-												location="top"
-												:eager="false"
-											>
-												Edit Position
-											</v-tooltip>
-											<v-icon />
-										</v-btn>
 									</div>
+
+									<v-btn
+										icon="mdi-file-edit"
+										size="x-small"
+										variant="tonal"
+										class="ml-2 mr-5"
+										@click="openEditPositionDialog(item.index)"
+									>
+										<v-tooltip
+											activator="parent"
+											location="top"
+											:eager="false"
+										>
+											Edit Position Manually
+										</v-tooltip>
+										<v-icon />
+									</v-btn>
 
 									<v-img
 										:src="playlistData?.videoInfo[item.id]?.thumbnail_url || placeholderImage"
@@ -113,7 +135,7 @@
 										:aspect-ratio="16/9"
 										width="125"
 										cover
-										class="mr-5 my-2"
+										class="mr-5 my-2 rounded"
 									/>
 
 									<v-btn
@@ -141,7 +163,7 @@
 										icon="mdi-trash-can"
 										size="x-small"
 										variant="tonal"
-										class="mr-5"
+										class="mr-2"
 										color="red"
 										:loading="isLoading"
 										@click="removeVideoFromPlaylist(item.index)"
@@ -164,16 +186,13 @@
 		</v-card>
 	</v-container>
 
-	<!-- Delete Playlist -->
 	<v-dialog
 		v-model="deleteDialog"
 		width="auto"
 	>
 		<v-card flat>
 			<v-card-title> Deleted the playlist </v-card-title>
-			<v-card-text>
-				Do you really want to delete the playlist?
-			</v-card-text>
+			<v-card-text> Do you really want to delete the playlist? </v-card-text>
 			<v-card-actions>
 				<v-spacer />
 				<v-btn
@@ -195,15 +214,12 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Add Video To Playlist -->
 	<v-dialog
 		v-model="addVideoDialog"
 		width="800"
 	>
 		<v-card flat>
-			<v-card-title>
-				<span class="text-h5">Adds a video to the playlist</span>
-			</v-card-title>
+			<v-card-title> <span class="text-h5">Adds a video to the playlist</span> </v-card-title>
 			<v-card-text>
 				<v-container>
 					<v-row>
@@ -216,7 +232,6 @@
 							Select Video
 						</v-btn>
 					</v-row>
-
 					<v-row>
 						<v-col
 							cols="12"
@@ -282,13 +297,12 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Select Video -->
 	<SelectVideoDialog
 		ref="selectVideoDialog"
 		@select-video="selectVideo"
+		@select-videos="addVideosDirectly"
 	/>
 
-	<!-- Edit playlist position -->
 	<v-dialog
 		v-model="editPositionDialog"
 		max-width="500"
@@ -325,13 +339,11 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Snackbar -->
 	<v-snackbar
 		v-model="snackbar"
 		timeout="3000"
 	>
 		{{ snackbarText }}
-
 		<template #actions>
 			<v-btn
 				color="blue"
@@ -354,6 +366,64 @@ import SelectVideoDialog from '@/composables/SelectVideoDialog.vue';
 
 import placeholderImage from '@/assets/placeholder-500x700.jpg';
 import { Duration } from 'luxon';
+
+const draggedItem = ref(null);
+const dragOverIndex = ref(null);
+
+const onDragStart = (event, item) => {
+	draggedItem.value = item;
+	event.dataTransfer.effectAllowed = 'move';
+};
+
+const onDragEnter = (item) => {
+	if (item.index !== draggedItem.value?.index) {
+		dragOverIndex.value = item.index;
+	}
+};
+
+const onDragEnd = () => {
+	draggedItem.value = null;
+	dragOverIndex.value = null;
+};
+
+const onDrop = (event, targetItem) => {
+	const sourceItem = draggedItem.value;
+
+	if (!sourceItem || sourceItem.index === targetItem.index) {
+		onDragEnd();
+		return;
+	}
+
+	moveVideo(sourceItem.index, targetItem.index);
+	onDragEnd();
+};
+
+const moveVideo = async (oldIndex, newIndex) => {
+	try {
+		isLoading.value = true;
+
+		await ky
+			.post(`playlists/id/${id}/video`, {
+				json: {
+					index: oldIndex,
+					newIndex: newIndex,
+				},
+			})
+			.json();
+
+		playlistData.value = await ky.get(`playlists/id/${id}`).json();
+
+		snackbar.value = true;
+		snackbarText.value = `Moved video from position ${oldIndex} to ${newIndex}.`;
+	}
+	catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbar.value = true;
+		snackbarText.value = message;
+	} finally {
+		isLoading.value = false;
+	}
+};
 
 const queueLength = computed(() => {
 	let progress = Duration.fromMillis(0);
@@ -389,9 +459,6 @@ const getVideoLength = (videoId, asString = true) => {
 	return asString ? progress.toFormat('hh:mm:ss') : videoInfo.length;
 };
 
-// ---
-// Select Video
-
 const addVideoDialog = ref(false);
 
 const openAddVideoDialog = () => {
@@ -410,11 +477,40 @@ const selectVideo = video => {
 	selectedVideo.value = video;
 };
 
-// ---
+const addVideosDirectly = async (videos) => {
+	if (!videos || videos.length === 0) return;
+
+	try {
+		isLoading.value = true;
+
+		const videoIds = videos.map(v => v.id);
+
+		await ky
+			.put(`playlists/id/${id}/video`, {
+				json: {
+					videoId: videoIds,
+				},
+			})
+			.json();
+
+		playlistData.value = await ky.get(`playlists/id/${id}`).json();
+		addVideoDialog.value = false;
+
+		snackbar.value = true;
+		snackbarText.value = `Successfully added ${videos.length} videos to playlist.`;
+	}
+	catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbar.value = true;
+		snackbarText.value = message;
+	} finally {
+		isLoading.value = false;
+	}
+};
 
 const route = useRoute();
 const router = useRouter();
-const id = route.params.id; // read parameter id (it is reactive)
+const id = route.params.id;
 
 const videos = computed(() => {
 	return playlistData.value?.videos || [];
@@ -514,28 +610,30 @@ const removeVideoFromPlaylist = async (index) => {
 };
 
 const editPos = async () => {
-	try {
-		await ky
-			.post(`playlists/id/${id}/video`, {
-				json: {
-					index: editPositionIndex.value,
-					newIndex: editPositionInput.value,
-				},
-			})
-			.json();
-
-		playlistData.value = await ky.get(`playlists/id/${id}`).json();
-
-		editPositionDialog.value = false;
-
-		snackbar.value = true;
-		snackbarText.value = 'Successfully edited playlist';
-	}
-	catch (error) {
-		const message = await error.response.text();
-
-		snackbar.value = true;
-		snackbarText.value = message;
-	}
+	moveVideo(editPositionIndex.value, editPositionInput.value);
+	editPositionDialog.value = false;
 };
 </script>
+
+<style scoped>
+.cursor-grab {
+	cursor: grab;
+}
+.draggable-item {
+	transition: all 0.2s ease-in-out;
+	border: 2px solid transparent !important;
+}
+
+.drag-source {
+	opacity: 0.4;
+	background-color: #E0E0E0;
+	box-shadow: none !important;
+}
+
+.drag-target {
+	border-color: rgb(var(--v-theme-primary)) !important;
+	background-color: rgba(var(--v-theme-primary), 0.08);
+	transform: scale(1.005);
+	z-index: 1;
+}
+</style>

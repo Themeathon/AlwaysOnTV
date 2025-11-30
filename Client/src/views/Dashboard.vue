@@ -176,11 +176,13 @@
 
 							<v-card-text
 								style="position: relative; height:100%;"
+								class="pa-2"
 							>
 								<v-virtual-scroll
 									style="position: absolute; left: 0; right: 0; top: 0; bottom: 0;"
 									:items="queueData.items"
 									item-height="100"
+									class="px-2"
 								>
 									<template #default="{ item, index }">
 										<QueueVideoItem
@@ -188,11 +190,18 @@
 											:index="index"
 
 											:loading="isLoading"
+											:is-drag-source="draggedItem && draggedItemIndex === index"
+											:is-drag-target="dragOverIndex === index && draggedItem && draggedItemIndex !== index"
 
 											@open-edit-pos="openEditQueuePositionDialog"
 											@delete-from-queue="deleteVideoFromQueue"
 											@edit-pos-start="editQueuePositionStart"
 											@edit-pos-end="editQueuePositionEnd"
+
+											@drag-start="onDragStart"
+											@drag-enter="onDragEnter"
+											@drag-end="onDragEnd"
+											@drop="onDrop"
 										/>
 									</template>
 								</v-virtual-scroll>
@@ -309,7 +318,6 @@
 		</div>
 	</v-container>
 
-	<!-- Edit queue position -->
 	<v-dialog
 		v-model="editQueuePositionDialog"
 		max-width="500"
@@ -346,19 +354,16 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Select Video -->
 	<SelectVideoDialog
 		ref="selectVideoDialog"
 		@select-video="selectVideo"
 	/>
 
-	<!-- Select Playlist -->
 	<SelectPlaylistDialog
 		ref="selectPlaylistDialog"
 		@select-playlist="selectPlaylist"
 	/>
 
-	<!-- Add Playlist Confirmation -->
 	<v-dialog
 		v-model="confirmAddPlaylistDialog"
 		width="auto"
@@ -421,13 +426,11 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Add Random Videos -->
 	<AddRandomVideosDialog
 		ref="addRandomVideosDialog"
 		@add-random-videos="addRandomVideos"
 	/>
 
-	<!-- Clear the queue -->
 	<v-dialog
 		v-model="deleteDialog"
 		width="auto"
@@ -458,7 +461,6 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Snackbar -->
 	<v-snackbar
 		v-model="snackbar"
 		timeout="3000"
@@ -590,8 +592,6 @@ socket.on('queue_history_update', ({ queue, history }) => {
 	historyData.value = history;
 });
 
-// ---
-// Select Video
 const selectVideoDialog = ref(null);
 
 const openSelectVideoDialog = () => {
@@ -602,10 +602,6 @@ const selectVideo = video => {
 	addNewVideoToQueue(video);
 };
 
-// ---
-
-// ---
-// Select Playlist
 const selectedPlaylist = ref(false);
 const selectPlaylistDialog = ref(null);
 const confirmAddPlaylistDialog = ref(false);
@@ -628,11 +624,6 @@ const selectedPlaylistLength = computed(() => {
 
 	return progress.toFormat('hh:mm:ss');
 });
-
-// ---
-
-// ---
-// Random Videos
 
 const addRandomVideosDialog = ref(null);
 
@@ -661,10 +652,59 @@ const addRandomVideos = async amount => {
 	}
 };
 
-// ---
+const draggedItem = ref(null);
+const draggedItemIndex = ref(null);
+const dragOverIndex = ref(null);
 
-// ---
-// Queue Video Items
+const onDragStart = (event, item, index) => {
+	draggedItem.value = item;
+	draggedItemIndex.value = index;
+};
+
+const onDragEnter = (item, index) => {
+	if (index !== draggedItemIndex.value) {
+		dragOverIndex.value = index;
+	}
+};
+
+const onDragEnd = () => {
+	draggedItem.value = null;
+	draggedItemIndex.value = null;
+	dragOverIndex.value = null;
+};
+
+const onDrop = (event, targetItem, targetIndex) => {
+	const sourceIndex = draggedItemIndex.value;
+
+	if (sourceIndex === null || sourceIndex === targetIndex) {
+		onDragEnd();
+		return;
+	}
+
+	moveVideoInQueue(sourceIndex, targetIndex);
+	onDragEnd();
+};
+
+const moveVideoInQueue = async (oldIndex, newIndex) => {
+	try {
+		await ky
+			.post('queue', {
+				json: {
+					index: oldIndex,
+					newIndex: newIndex,
+				},
+			})
+			.json();
+
+		snackbar.value = true;
+		snackbarText.value = `Moved video from position ${oldIndex + 1} to ${newIndex + 1}.`;
+	}
+	catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbar.value = true;
+		snackbarText.value = message;
+	}
+};
 
 const editQueuePositionDialog = ref(false);
 const editQueuePositionIndex = ref(false);
@@ -764,8 +804,6 @@ const deleteVideoFromQueue = async (index) => {
 		snackbarText.value = message;
 	}
 };
-
-// ---
 
 const deleteDialog = ref(false);
 
@@ -896,3 +934,12 @@ const addNewPlaylistToQueue = async () => {
 	}
 };
 </script>
+
+<style scoped>
+.v-card-title span {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
+}
+</style>

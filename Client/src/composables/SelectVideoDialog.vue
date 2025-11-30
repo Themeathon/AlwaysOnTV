@@ -16,6 +16,23 @@
 					<v-icon>mdi-close</v-icon>
 				</v-btn>
 				<v-toolbar-title>Select Video</v-toolbar-title>
+
+				<v-spacer />
+
+				<v-btn
+					icon
+					class="mr-2"
+					:color="selectionMode ? 'green' : ''"
+					@click="toggleSelectionMode"
+				>
+					<v-icon>mdi-checkbox-multiple-marked</v-icon>
+					<v-tooltip
+						activator="parent"
+						location="bottom"
+					>
+						{{ selectionMode ? 'Disable Multi-Select' : 'Enable Multi-Select' }}
+					</v-tooltip>
+				</v-btn>
 			</v-toolbar>
 
 			<v-card-text>
@@ -62,7 +79,7 @@
 					<template #default="{ item }">
 						<v-list-item
 							class="py-2"
-							@click="selectVideo(item)"
+							@click="onItemClick(item)"
 						>
 							<v-list-item-title class="text-h5 font-weight-bold">
 								{{ item.title }}
@@ -77,6 +94,16 @@
 							</v-list-item-subtitle>
 
 							<template #prepend>
+								<div
+									v-if="selectionMode"
+									class="mr-4 d-flex align-center"
+								>
+									<v-checkbox-btn
+										:model-value="isSelected(item)"
+										@click.stop="toggleItem(item)"
+									/>
+								</div>
+
 								<v-img
 									:src="item.thumbnail_url"
 									:lazy-src="placeholderImage"
@@ -91,6 +118,25 @@
 					</template>
 				</v-virtual-scroll>
 			</v-card-text>
+
+			<v-card-actions
+				v-if="selectionMode"
+				class="bg-surface"
+				style="position: absolute; bottom: 0; width: 100%; border-top: 1px solid rgba(255,255,255,0.12);"
+			>
+				<div class="px-4">
+					{{ selectedItems.length }} videos selected
+				</div>
+				<v-spacer />
+				<v-btn
+					color="green"
+					variant="elevated"
+					:disabled="selectedItems.length === 0"
+					@click="emitSelected"
+				>
+					Add Selected Videos
+				</v-btn>
+			</v-card-actions>
 		</v-card>
 	</v-dialog>
 </template>
@@ -109,6 +155,42 @@ const videos = ref([]);
 
 const filter = ref(['Title']);
 
+const selectionMode = ref(false);
+const selectedItems = ref([]);
+
+const toggleSelectionMode = () => {
+	selectionMode.value = !selectionMode.value;
+	selectedItems.value = [];
+};
+
+const isSelected = (item) => {
+	return selectedItems.value.some(v => v.id === item.id);
+};
+
+const toggleItem = (item) => {
+	const index = selectedItems.value.findIndex(v => v.id === item.id);
+	if (index === -1) {
+		selectedItems.value.push(item);
+	} else {
+		selectedItems.value.splice(index, 1);
+	}
+};
+
+const onItemClick = (item) => {
+	if (selectionMode.value) {
+		toggleItem(item);
+	} else {
+		selectVideo(item);
+	}
+};
+
+const emitSelected = () => {
+	emit('select-videos', selectedItems.value);
+	dialog.value = false;
+	selectionMode.value = false;
+	selectedItems.value = [];
+};
+
 const formatVideoLength = length => {
 	const progress = Duration.fromObject({ seconds: length });
 
@@ -117,11 +199,8 @@ const formatVideoLength = length => {
 
 const open = async () => {
 	dialog.value = true;
-
 	loading.value = true;
-
 	videos.value = await ky.get('videos').json();
-
 	loading.value = false;
 };
 
@@ -137,11 +216,10 @@ const filteredVideos = computed(() => {
 	});
 });
 
-const emit = defineEmits(['selectVideo']);
+const emit = defineEmits(['selectVideo', 'select-videos']);
 
-const selectVideo = game => {
-	emit('selectVideo', game);
-
+const selectVideo = video => {
+	emit('selectVideo', video);
 	dialog.value = false;
 };
 

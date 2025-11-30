@@ -212,6 +212,7 @@
 	<SelectVideoDialog
 		ref="selectVideoDialog"
 		@select-video="selectVideo"
+		@select-videos="addVideosDirectly"
 	/>
 
 	<!-- Snackbar -->
@@ -276,9 +277,6 @@ const getVideoLength = (videoId, asString = true) => {
 	return asString ? progress.toFormat('hh:mm:ss') : videoInfo.length;
 };
 
-// ---
-// Select Video
-
 const addVideoDialog = ref(false);
 
 const openAddVideoDialog = () => {
@@ -296,8 +294,6 @@ const openSelectVideoDialog = () => {
 const selectVideo = video => {
 	selectedVideo.value = video;
 };
-
-// ---
 
 const playlistData = ref({});
 
@@ -368,6 +364,38 @@ const removeVideoFromPlaylist = async (videoId) => {
 
 		snackbar.value = true;
 		snackbarText.value = message;
+	}
+};
+
+const addVideosDirectly = async (videos) => {
+	if (!videos || videos.length === 0) return;
+
+	try {
+		isLoading.value = true;
+
+		const videoIds = videos.map(v => v.id);
+
+		await ky
+			.put('random-playlist', {
+				json: {
+					videoIds: videoIds,
+				},
+			})
+			.json();
+
+		playlistData.value = await ky.get('random-playlist').json();
+
+		addVideoDialog.value = false;
+
+		snackbar.value = true;
+		snackbarText.value = `Successfully added ${videos.length} videos to random playlist.`;
+	}
+	catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbar.value = true;
+		snackbarText.value = message;
+	} finally {
+		isLoading.value = false;
 	}
 };
 </script>

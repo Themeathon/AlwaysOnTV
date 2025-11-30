@@ -27,16 +27,14 @@
 
 	<v-divider :thickness="3" />
 
-	<v-container>
+	<v-container fluid>
 		<v-row
 			justify="center"
 			align="center"
 		>
 			<v-col
 				cols="12"
-				sm="6"
-				md="4"
-				lg="3"
+				md="auto"
 			>
 				<v-btn
 					color="blue"
@@ -45,7 +43,7 @@
 					class="mx-2"
 					@click="toggleSelectionMode"
 				>
-					{{ selectionMode ? 'Stop selection' : 'Add videos to playlist' }}
+					{{ selectionMode ? 'Stop' : 'Select' }}
 				</v-btn>
 				<v-btn
 					v-if="selectionMode"
@@ -56,31 +54,98 @@
 					class="mx-2"
 					@click="openAddToPlaylistDialog()"
 				>
-					{{ `Add ${selectedVideoIds.length} selected video(s) to playlist` }}
+					Add ({{ selectedVideoIds.length }})
 				</v-btn>
 			</v-col>
 
 			<v-col
 				cols="12"
 				sm="6"
-				md="4"
-				lg="3"
+				md="3"
 			>
 				<v-text-field
 					v-model="videoSearch"
-					label="Search videos (Title)"
+					label="Search"
 					append-inner-icon="mdi-magnify"
 					variant="solo-filled"
 					hide-details
 					clearable
+					density="compact"
 				/>
 			</v-col>
 
 			<v-col
 				cols="12"
-				sm="6"
-				md="4"
-				lg="3"
+				sm="4"
+				md="2"
+			>
+				<v-select
+					v-model="sortBy"
+					:items="sortOptions"
+					item-title="title"
+					item-value="value"
+					label="Sort by"
+					variant="solo-filled"
+					hide-details
+					density="compact"
+				/>
+			</v-col>
+
+			<v-col cols="auto">
+				<v-btn
+					icon
+					variant="text"
+					@click="sortDesc = !sortDesc"
+				>
+					<v-icon>{{ sortDesc ? 'mdi-sort-descending' : 'mdi-sort-ascending' }}</v-icon>
+					<v-tooltip
+						activator="parent"
+						location="top"
+					>
+						{{ sortDesc ? 'Descending' : 'Ascending' }}
+					</v-tooltip>
+				</v-btn>
+			</v-col>
+
+			<v-col cols="auto">
+				<v-btn-toggle
+					v-model="viewMode"
+					mandatory
+					density="compact"
+					color="primary"
+					variant="outlined"
+					divided
+				>
+					<v-btn
+						value="grid"
+						icon="mdi-view-grid"
+					>
+						<v-tooltip
+							activator="parent"
+							location="top"
+						>
+							Grid View
+						</v-tooltip>
+						<v-icon>mdi-view-grid</v-icon>
+					</v-btn>
+					<v-btn
+						value="list"
+						icon="mdi-view-list"
+					>
+						<v-tooltip
+							activator="parent"
+							location="top"
+						>
+							List View
+						</v-tooltip>
+						<v-icon>mdi-view-list</v-icon>
+					</v-btn>
+				</v-btn-toggle>
+			</v-col>
+
+			<v-col
+				cols="12"
+				sm="auto"
 				class="d-flex justify-center"
 			>
 				<v-chip-group
@@ -89,21 +154,31 @@
 					filter
 					selected-class="text-primary"
 				>
-					<v-chip value="all">
+					<v-chip
+						value="all"
+						size="small"
+					>
 						All
 					</v-chip>
-					<v-chip value="youtube">
+					<v-chip
+						value="youtube"
+						size="small"
+					>
 						YouTube
 					</v-chip>
-					<v-chip value="local">
+					<v-chip
+						value="local"
+						size="small"
+					>
 						Local
 					</v-chip>
 				</v-chip-group>
 			</v-col>
+
 			<v-col
+				v-if="viewMode === 'grid'"
 				cols="12"
-				md="4"
-				lg="3"
+				md="3"
 			>
 				<v-pagination
 					v-model="page"
@@ -114,7 +189,7 @@
 		</v-row>
 	</v-container>
 
-	<v-container>
+	<v-container v-if="viewMode === 'grid'">
 		<v-row class="mb-4">
 			<v-col
 				v-for="item in chunkedVideos[page - 1]"
@@ -315,22 +390,192 @@
 					</v-card>
 				</v-hover>
 			</v-col>
-			<v-col
-				v-if="chunkedVideos.length === 0 && videos.length > 0"
-				cols="12"
-				class="text-center mt-5"
-			>
-				<p>No videos found matching your search and filter criteria.</p>
-			</v-col>
-			<v-col
-				v-if="videos.length === 0 && !isLoading"
-				cols="12"
-				class="text-center mt-5"
-			>
-				<p>No videos available. Try scanning for local videos or adding YouTube videos.</p>
-			</v-col>
 		</v-row>
 	</v-container>
+
+	<v-card
+		v-if="viewMode === 'list'"
+		class="mx-4 mb-4"
+		style="height: 70vh;"
+	>
+		<v-virtual-scroll
+			:items="sortedVideos"
+			height="100%"
+			item-height="100"
+		>
+			<template #default="{ item }">
+				<v-list-item
+					class="py-2"
+					@click="selectionMode ? toggleVideoSelection(item.id) : null"
+				>
+					<template #prepend>
+						<div
+							v-if="selectionMode"
+							class="mr-4 d-flex align-center"
+						>
+							<v-checkbox-btn
+								:model-value="isVideoSelected(item.id)"
+								@click.stop="toggleVideoSelection(item.id)"
+							/>
+						</div>
+
+						<v-img
+							:src="item.thumbnail_url || placeholderImage"
+							:lazy-src="placeholderImage"
+							cover
+							width="140"
+							aspect-ratio="16/9"
+							class="mr-4 rounded"
+						/>
+					</template>
+
+					<v-list-item-title class="text-h6">
+						{{ item.title }}
+					</v-list-item-title>
+
+					<v-list-item-subtitle class="mt-1">
+						<v-chip
+							v-if="item.source_type === 'local'"
+							color="blue"
+							size="x-small"
+							density="compact"
+							class="mr-2"
+						>
+							LOCAL
+						</v-chip>
+						<v-chip
+							v-else
+							color="red"
+							size="x-small"
+							density="compact"
+							class="mr-2"
+						>
+							YOUTUBE
+						</v-chip>
+						<strong class="mr-2">{{ item.gameTitle }}</strong>
+						<v-icon
+							size="small"
+							class="mr-1"
+						>
+							mdi-clock-outline
+						</v-icon>
+						{{ formatVideoLength(item.length) }}
+					</v-list-item-subtitle>
+
+					<template #append>
+						<div class="d-flex align-center">
+							<v-btn
+								icon="mdi-clock-outline"
+								variant="text"
+								color="orange-darken-4"
+								class="mr-1"
+								@click.stop="queueVideo(item.id)"
+							>
+								<v-tooltip
+									activator="parent"
+									location="top"
+								>
+									Queue Video
+								</v-tooltip>
+								<v-icon>mdi-clock-outline</v-icon>
+							</v-btn>
+
+							<v-btn
+								icon="mdi-plus"
+								variant="text"
+								color="blue-darken-1"
+								class="mr-1"
+								@click.stop="openAddToPlaylistDialog(item)"
+							>
+								<v-tooltip
+									activator="parent"
+									location="top"
+								>
+									Add to Playlist
+								</v-tooltip>
+								<v-icon>mdi-plus</v-icon>
+							</v-btn>
+
+							<v-btn
+								icon="mdi-file-edit"
+								variant="text"
+								color="green-darken-1"
+								class="mr-1"
+								@click.stop="openEditVideoDialog(item)"
+							>
+								<v-tooltip
+									activator="parent"
+									location="top"
+								>
+									Edit
+								</v-tooltip>
+								<v-icon>mdi-file-edit</v-icon>
+							</v-btn>
+
+							<v-btn
+								icon="mdi-trash-can"
+								variant="text"
+								color="red-darken-1"
+								@click.stop="openDeleteDialog(item)"
+							>
+								<v-tooltip
+									activator="parent"
+									location="top"
+								>
+									Delete
+								</v-tooltip>
+								<v-icon>mdi-trash-can</v-icon>
+							</v-btn>
+						</div>
+					</template>
+				</v-list-item>
+				<v-divider />
+			</template>
+		</v-virtual-scroll>
+	</v-card>
+
+	<v-col
+		v-if="sortedVideos.length === 0 && videos.length > 0"
+		cols="12"
+		class="text-center mt-5"
+	>
+		<p>No videos found matching your search and filter criteria.</p>
+	</v-col>
+	<v-col
+		v-if="videos.length === 0 && !isLoading"
+		cols="12"
+		class="text-center mt-5"
+	>
+		<p>No videos available. Try scanning for local videos or adding YouTube videos.</p>
+	</v-col>
+
+	<v-dialog
+		v-model="scanDialog"
+		persistent
+		width="400"
+	>
+		<v-card>
+			<v-card-title>Scanning Local Videos</v-card-title>
+			<v-card-text>
+				<div class="mb-2">
+					Processing: {{ scanCurrent }} / {{ scanTotal }}
+				</div>
+				<v-progress-linear
+					v-model="scanPercentage"
+					color="blue"
+					height="25"
+					striped
+				>
+					<template #default="{ value }">
+						<strong>{{ Math.ceil(value) }}%</strong>
+					</template>
+				</v-progress-linear>
+				<div class="mt-2 text-caption text-truncate">
+					{{ scanFilename }}
+				</div>
+			</v-card-text>
+		</v-card>
+	</v-dialog>
 
 	<v-dialog
 		v-model="createVideoDialog"
@@ -491,6 +736,7 @@
 						hide-details
 					/>
 				</v-row>
+
 				<v-row class="mt-4">
 					<v-file-input
 						v-model="thumbnailFile"
@@ -502,7 +748,7 @@
 						show-size
 					/>
 				</v-row>
-				<v-row class="mb-0">
+				<v-row class="mb-0 mt-2">
 					<v-btn
 						color="green-darken-1"
 						variant="text"
@@ -714,16 +960,17 @@
 </template>
 
 <script setup>
-import ky, {isLoading} from '@/ky';
+import ky, { isLoading } from '@/ky';
 import _ from 'lodash';
-import {onMounted, ref, watch, computed} from 'vue';
-import {useDisplay} from 'vuetify';
+import { onMounted, ref, watch, computed } from 'vue';
+import { useDisplay } from 'vuetify';
+import { socket } from '@/socket';
 
 import SelectGameDialog from '@/composables/SelectGameDialog.vue';
 import SelectPlaylistDialog from '@/composables/SelectPlaylistDialog.vue';
 
 import placeholderImage from '@/assets/placeholder-500x700.jpg';
-import {Duration} from 'luxon';
+import { Duration } from 'luxon';
 
 const videos = ref([]);
 const videoSearch = ref('');
@@ -732,6 +979,33 @@ const snackbar = ref(false);
 const snackbarText = ref('');
 const isScanning = ref(false);
 const sourceFilter = ref('all');
+
+const viewMode = ref(localStorage.getItem('videos_view_mode') || 'grid');
+
+watch(viewMode, (newValue) => {
+	localStorage.setItem('videos_view_mode', newValue);
+});
+
+const sortBy = ref('created_at');
+const sortDesc = ref(true);
+
+const sortOptions = [
+	{ title: 'Date Added', value: 'created_at' },
+	{ title: 'Title', value: 'title' },
+	{ title: 'Video ID', value: 'id' },
+	{ title: 'Length', value: 'length' },
+	{ title: 'Game', value: 'gameTitle' },
+];
+
+const scanDialog = ref(false);
+const scanCurrent = ref(0);
+const scanTotal = ref(0);
+const scanFilename = ref('');
+
+const scanPercentage = computed(() => {
+	if (scanTotal.value === 0) return 0;
+	return (scanCurrent.value / scanTotal.value) * 100;
+});
 
 const createVideoDialog = ref(false);
 const searchInput = ref('');
@@ -745,6 +1019,7 @@ const selectedGame = ref(null);
 const editVideoDialog = ref(false);
 const editingVideo = ref({});
 const originalEditingVideo = ref({});
+const thumbnailFile = ref(null);
 
 const deleteDialog = ref(false);
 const deletingVideo = ref({});
@@ -758,10 +1033,8 @@ const selectedPlaylist = ref(null);
 const selectionMode = ref(false);
 const selectedVideoIds = ref([]);
 
-const thumbnailFile = ref(null);
-
 const formatVideoLength = (length) => {
-	const progress = Duration.fromObject({seconds: length || 0});
+	const progress = Duration.fromObject({ seconds: length || 0 });
 	return progress.toFormat('hh:mm:ss');
 };
 
@@ -785,49 +1058,53 @@ const getGameThumbnailURL = () => selectedGame.value?.thumbnail_url || placehold
 const getGameTitle = () => selectedGame.value?.title || 'N/A';
 const getGameID = () => selectedGame.value?.id || 'N/A';
 
-const {name} = useDisplay();
+const { name } = useDisplay();
 
-const chunkedVideos = computed(() => {
-	let chunk = 6;
-	switch (name.value) {
-	case 'xs':
-		chunk = 2;
-		break;
-	case 'sm':
-		chunk = 2;
-		break;
-	case 'md':
-		chunk = 4;
-		break;
-	case 'lg':
-		chunk = 6;
-		break;
-	case 'xl':
-		chunk = 8;
-		break;
-	case 'xxl':
-		chunk = 12;
-		break;
-	default:
-		chunk = 12;
-		break;
-	}
-
+const sortedVideos = computed(() => {
 	const sourceFiltered = videos.value.filter(video => {
 		if (sourceFilter.value === 'all') return true;
-
 		return video.source_type === sourceFilter.value;
 	});
 
 	const searchFiltered = sourceFiltered.filter((video) => {
 		if (!videoSearch.value) return true;
-
 		return video.title?.toLowerCase().includes(videoSearch.value.toLowerCase());
 	});
 
-	const chunks = _.chunk(searchFiltered, chunk);
+	// Natural Sort Logic
+	return searchFiltered.sort((a, b) => {
+		const field = sortBy.value;
+		let valA = a[field];
+		let valB = b[field];
 
-	return chunks;
+		const modifier = sortDesc.value ? -1 : 1;
+
+		valA = valA ?? '';
+		valB = valB ?? '';
+
+		if (typeof valA === 'string' && typeof valB === 'string') {
+			return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) * modifier;
+		}
+
+		if (valA < valB) return -1 * modifier;
+		if (valA > valB) return 1 * modifier;
+		return 0;
+	});
+});
+
+const chunkedVideos = computed(() => {
+	let chunk = 6;
+	switch (name.value) {
+		case 'xs': chunk = 2; break;
+		case 'sm': chunk = 2; break;
+		case 'md': chunk = 4; break;
+		case 'lg': chunk = 6; break;
+		case 'xl': chunk = 8; break;
+		case 'xxl': chunk = 12; break;
+		default: chunk = 12; break;
+	}
+
+	return _.chunk(sortedVideos.value, chunk);
 });
 
 const disableAddVideo = computed(() => {
@@ -839,12 +1116,14 @@ const disableAddVideo = computed(() => {
 
 const canSaveEdit = computed(() => {
 	if (!editingVideo.value || !originalEditingVideo.value) return false;
+
 	if (thumbnailFile.value) return true;
+
 	return editingVideo.value.title !== originalEditingVideo.value.title ||
-      selectedGame.value?.id !== originalEditingVideo.value.gameId;
+		selectedGame.value?.id !== originalEditingVideo.value.gameId;
 });
 
-watch([videoSearch, sourceFilter], () => {
+watch([videoSearch, sourceFilter, sortBy, sortDesc], () => {
 	page.value = 1;
 });
 
@@ -852,7 +1131,7 @@ watch(chunkedVideos, (newValue) => {
 	if (page.value > newValue.length) {
 		page.value = Math.max(1, newValue.length);
 	}
-}, {immediate: false});
+}, { immediate: false });
 
 watch(searchInput, (newValue) => {
 	if (createVideoDialog.value && newValue !== '') {
@@ -872,7 +1151,6 @@ const fetchVideos = async () => {
 	try {
 		isLoading.value = true;
 		videos.value = await ky.get('videos').json();
-		console.log('Fetched Videos:', videos.value);
 	} catch (error) {
 		showSnackbar(`Error fetching videos: ${await error?.response?.text() || error.message}`);
 	} finally {
@@ -894,6 +1172,32 @@ const fetchDefaultGame = async () => {
 onMounted(async () => {
 	await fetchDefaultGame();
 	await fetchVideos();
+
+	socket.on('scan_start', (data) => {
+		scanCurrent.value = 0;
+		scanTotal.value = data.total;
+		scanFilename.value = 'Starting scan...';
+		scanDialog.value = true;
+	});
+
+	socket.on('scan_progress', (data) => {
+		scanCurrent.value = data.current;
+		scanTotal.value = data.total;
+		scanFilename.value = data.filename;
+	});
+
+	socket.on('scan_complete', async (result) => {
+		scanDialog.value = false;
+		isScanning.value = false;
+
+		if (result && result.added !== undefined) {
+			showSnackbar(`Scan complete! Added: ${result.added}, Skipped: ${result.skipped}, Failed: ${result.failed}`);
+		} else {
+			showSnackbar('Scan complete!');
+		}
+
+		await fetchVideos();
+	});
 });
 
 const showSnackbar = (text) => {
@@ -928,7 +1232,7 @@ const searchForYouTubeVideos = async () => {
 	try {
 		isLoading.value = true;
 
-		const data = await ky.post('youtube/get-video', {json: {videoId: searchTerm}}).json();
+		const data = await ky.post('youtube/get-video', { json: { videoId: searchTerm } }).json();
 
 		if (!data) {
 			showSnackbar('No YouTube video found with that ID/URL.');
@@ -950,7 +1254,6 @@ const searchForYouTubeVideos = async () => {
 const searchForYouTubeVideosDebounced = _.debounce(searchForYouTubeVideos, 500);
 
 const addNewVideo = async () => {
-
 	if (disableAddVideo.value) return;
 
 	try {
@@ -978,17 +1281,12 @@ const addNewVideo = async () => {
 
 const scanLocalVideos = async () => {
 	isScanning.value = true;
-	showSnackbar('Scanning for local videos...');
 
 	try {
-		const result = await ky.post('videos/scan-local').json();
-		showSnackbar(`Scan complete! Added: ${result.added}, Skipped: ${result.skipped}, Failed: ${result.failed}`);
-
-		await fetchVideos();
-
+		await ky.post('videos/scan-local').json();
+		showSnackbar('Scan started in background...');
 	} catch (error) {
-		showSnackbar(`Error scanning videos: ${await error?.response?.text() || error.message}`);
-	} finally {
+		showSnackbar(`Error starting scan: ${await error?.response?.text() || error.message}`);
 		isScanning.value = false;
 	}
 };
@@ -997,24 +1295,23 @@ const openEditVideoDialog = async (video) => {
 	const original = videos.value.find(v => v.id === video.id);
 
 	if (!original) return;
-	editingVideo.value = {...original};
-	originalEditingVideo.value = {...original};
+	editingVideo.value = { ...original };
+	originalEditingVideo.value = { ...original };
+	thumbnailFile.value = null;
 	try {
 		selectedGame.value = await ky.get(`games/id/${original.gameId}`).json();
 	} catch {
 		selectedGame.value = defaultGame.value;
 	}
-	thumbnailFile.value = null;
 	editVideoDialog.value = true;
 };
 
 const editVideo = async (videoId) => {
-
-	if (!canSaveEdit.value && !thumbnailFile.value) return;
+	if (!canSaveEdit.value) return;
 	try {
 		isLoading.value = true;
 
-		if (canSaveEdit.value) {
+		if (editingVideo.value.title !== originalEditingVideo.value.title || selectedGame.value?.id !== originalEditingVideo.value.gameId) {
 			await ky.post(`videos/id/${videoId}`, {
 				json: {
 					title: editingVideo.value.title,
@@ -1025,9 +1322,7 @@ const editVideo = async (videoId) => {
 
 		if (thumbnailFile.value) {
 			const formData = new FormData();
-
 			const file = Array.isArray(thumbnailFile.value) ? thumbnailFile.value[0] : thumbnailFile.value;
-
 			formData.append('thumbnail', file);
 
 			await ky.post(`videos/id/${videoId}/thumbnail`, {
@@ -1041,7 +1336,9 @@ const editVideo = async (videoId) => {
 		showSnackbar('Successfully edited video.');
 
 	} catch (error) {
-		showSnackbar(`Error editing video: ${await error?.response?.text() || error.message}`);
+		let msg = error.message;
+		try { msg = await error.response.text(); } catch (e) { }
+		showSnackbar(`Error editing video: ${msg}`);
 	} finally {
 		isLoading.value = false;
 	}
@@ -1117,7 +1414,7 @@ const addVideoToPlaylist = async () => {
 		isLoading.value = true;
 
 		await ky.put(`playlists/id/${selectedPlaylist.value.id}/video`, {
-			json: {videoId: selectedVideoIds.value},
+			json: { videoId: selectedVideoIds.value },
 		}).json();
 
 		const count = selectedVideoIds.value.length;
@@ -1148,7 +1445,7 @@ const queueVideo = async (videoId) => {
 	try {
 		isLoading.value = true;
 
-		await ky.put('queue/video', {json: {videoId}}).json();
+		await ky.put('queue/video', { json: { videoId } }).json();
 
 		showSnackbar('Successfully queued video.');
 	} catch (error) {
@@ -1157,14 +1454,13 @@ const queueVideo = async (videoId) => {
 		isLoading.value = false;
 	}
 };
-
 </script>
 
 <style scoped>
 .v-card-title span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
 }
 </style>

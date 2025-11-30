@@ -2,9 +2,13 @@ import AbstractEndpoint from '~/api/AbstractEndpoint.js';
 import Config from '~/utils/Config.js';
 import VideoDatabase from '~/db/VideoDatabase.js';
 import GameDatabase from '~/db/GameDatabase.js';
+import RandomPlaylistDatabase from '~/db/RandomPlaylistDatabase.js';
 import pino from '~/utils/Pino.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import Socket from '~/Socket.js';
+
+//ffmpeg setup
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from 'ffmpeg-static';
 import { path as ffprobePath } from 'ffprobe-static';
@@ -78,30 +82,58 @@ class ScanLocalVideos extends AbstractEndpoint {
 		});
 	}
 
-	async scanVideos (ctx, next) {
-		const basePaths = Config.data.local_media?.base_paths || [];
-		if (!basePaths.length) {
-			return super.error(ctx, 'No local media base paths configured in config.json');
-		}
-
-		const thumbnailDir = path.join(process.cwd(), 'public', 'thumbnails');
-		await fs.mkdir(thumbnailDir, { recursive: true });
-
-		let allVideoFiles = [];
-		for (const basePath of basePaths) {
-			allVideoFiles = allVideoFiles.concat(await this.findVideoFiles(basePath));
-		}
-
+	async runBackgroundScan (allVideoFiles) {
 		const addedVideos = [];
 		const skippedVideos = [];
 		const failedVideos = [];
 
 		let videoCounter = await Promise.resolve(VideoDatabase.getMaxLocalVideoId());
+		const totalFiles = allVideoFiles.length;
+
+		Socket.io.emit('scan_start', { total: totalFiles });
+
+		let processedCount = 0;
 
 		for (const filePath of allVideoFiles) {
+			processedCount++;
+			const filename = path.basename(filePath);
+
+			Socket.io.emit('scan_progress', {
+				current: processedCount,
+				total: totalFiles,
+				filename: filename,
+			});
+
 			try {
 				const existing = await VideoDatabase.tryGet({ file_path: filePath });
 				if (existing) {
+					let thumbnailMissing = true;
+
+					if (existing.thumbnail_url) {
+						const relativePath = existing.thumbnail_url.startsWith('/') ? existing.thumbnail_url.slice(1) : existing.thumbnail_url;
+						const absoluteThumbnailPath = path.join(process.cwd(), 'public', relativePath);
+
+						try {
+							await fs.access(absoluteThumbnailPath);
+							thumbnailMissing = false;
+							// eslint-disable-next-line no-unused-vars
+						} catch (e) {
+							thumbnailMissing = true;
+						}
+					}
+
+					if (thumbnailMissing) {
+						pino.info(`Thumbnail missing for video ${existing.id} (${filename}). Regenerating`);
+
+						const metadata = await this.processVideoFile(filePath, existing.id);
+
+						if (metadata.thumbnail_url) {
+							await VideoDatabase.updateVideo(existing.id, {
+								thumbnail_url: metadata.thumbnail_url,
+							});
+						}
+					}
+
 					skippedVideos.push({ path: filePath, reason: 'Already in database' });
 					continue;
 				}
@@ -124,6 +156,7 @@ class ScanLocalVideos extends AbstractEndpoint {
 
 				const createdVideo = await VideoDatabase.createVideo(videoData);
 				if (createdVideo) {
+					await RandomPlaylistDatabase.addVideos(createdVideo.id);
 					addedVideos.push(createdVideo);
 				} else {
 					failedVideos.push({ path: filePath, reason: 'Database insertion failed' });
@@ -135,10 +168,32 @@ class ScanLocalVideos extends AbstractEndpoint {
 			}
 		}
 
-		return super.success(ctx, next, {
+		Socket.io.emit('scan_complete', {
 			added: addedVideos.length,
 			skipped: skippedVideos.length,
 			failed: failedVideos.length,
+		});
+	}
+
+	async scanVideos (ctx, next) {
+		const basePaths = Config.data.local_media?.base_paths || [];
+		if (!basePaths.length) {
+			return super.error(ctx, 'No local media base paths configured in config.json');
+		}
+
+		const thumbnailDir = path.join(process.cwd(), 'public', 'thumbnails');
+		await fs.mkdir(thumbnailDir, { recursive: true });
+
+		let allVideoFiles = [];
+		for (const basePath of basePaths) {
+			allVideoFiles = allVideoFiles.concat(await this.findVideoFiles(basePath));
+		}
+
+		this.runBackgroundScan(allVideoFiles);
+
+		return super.success(ctx, next, {
+			message: 'Background scan started',
+			totalFilesFound: allVideoFiles.length,
 		});
 	}
 }
