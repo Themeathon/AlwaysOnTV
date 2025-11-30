@@ -16,9 +16,26 @@
 						<v-spacer />
 
 						<div class="text-center text-wrap">
-							<p class="text-h3 mx-4">
-								{{ playlistData.title }}
-							</p>
+							<div class="d-flex justify-center align-center">
+								<p class="text-h3 mx-2">
+									{{ playlistData.title }}
+								</p>
+								<v-btn
+									icon="mdi-pencil"
+									variant="text"
+									size="small"
+									color="grey"
+									@click="openRenameDialog"
+								>
+									<v-tooltip
+										activator="parent"
+										location="top"
+									>
+										Rename Playlist
+									</v-tooltip>
+									<v-icon>mdi-pencil</v-icon>
+								</v-btn>
+							</div>
 
 							<p class="mt-2 text-subtitle-1">
 								<strong>Estimated length:</strong> {{ queueLength }}
@@ -37,6 +54,17 @@
 								@click="openAddVideoDialog"
 							>
 								Add video to Playlist
+							</v-btn>
+
+							<v-btn
+								block
+								class="my-2"
+								color="orange-darken-4"
+								variant="outlined"
+								prepend-icon="mdi-clock-outline"
+								@click="queuePlaylistDialog = true"
+							>
+								Queue Playlist
 							</v-btn>
 
 							<v-spacer />
@@ -59,17 +87,16 @@
 				<v-card-text
 					id="virtualScrollOuter"
 					style="position: relative; height:100%;"
-					class="pa-2"
+					class="pa-0"
 				>
 					<v-virtual-scroll
 						style="position: absolute; left: 0; right: 0; top: 0; bottom: 0;"
 						:items="videos"
 						item-height="100"
-						class="px-2"
 					>
 						<template #default="{ item }">
 							<v-list-item
-								class="draggable-item mb-1 rounded"
+								class="draggable-item"
 								:class="{
 									'drag-source': draggedItem && draggedItem.index === item.index,
 									'drag-target': dragOverIndex === item.index && draggedItem && draggedItem.index !== item.index
@@ -101,7 +128,10 @@
 										mdi-drag-horizontal-variant
 									</v-icon>
 
-									<div class="mx-2 text-center" style="min-width: 30px;">
+									<div
+										class="mx-2 text-center"
+										style="min-width: 30px;"
+									>
 										<span class="text-center font-weight-bold">
 											{{ item.index }}
 										</span>
@@ -127,10 +157,10 @@
 									<v-img
 										:src="playlistData?.videoInfo[item.id]?.thumbnail_url || placeholderImage"
 										:lazy-src="placeholderImage"
-										:aspect-ratio="16/9"
-										width="125"
 										cover
-										class="mr-5 my-2 rounded"
+										width="140"
+										aspect-ratio="16/9"
+										class="mr-4 rounded"
 									/>
 
 									<v-btn
@@ -155,6 +185,24 @@
 
 								<template #append>
 									<div class="d-flex align-center">
+										<v-btn
+											icon="mdi-clock-outline"
+											size="x-small"
+											variant="tonal"
+											class="mr-2"
+											color="orange-darken-4"
+											@click="queueVideo(item.id)"
+										>
+											<v-tooltip
+												activator="parent"
+												location="top"
+												:eager="false"
+											>
+												Queue Video
+											</v-tooltip>
+											<v-icon>mdi-clock-outline</v-icon>
+										</v-btn>
+
 										<v-btn
 											icon="mdi-file-edit"
 											size="x-small"
@@ -194,6 +242,7 @@
 									</div>
 								</template>
 							</v-list-item>
+							<v-divider />
 						</template>
 					</v-virtual-scroll>
 				</v-card-text>
@@ -201,34 +250,154 @@
 		</v-card>
 	</v-container>
 
-	<v-dialog v-model="deleteDialog" width="auto">
+	<v-dialog
+		v-model="deleteDialog"
+		width="auto"
+	>
 		<v-card flat>
 			<v-card-title> Deleted the playlist </v-card-title>
 			<v-card-text> Do you really want to delete the playlist? </v-card-text>
 			<v-card-actions>
 				<v-spacer />
-				<v-btn color="red-darken-1" variant="text" @click="deleteDialog = false">Cancel</v-btn>
-				<v-btn color="green-darken-1" variant="text" :loading="isLoading" @click="deletePlaylist">Delete</v-btn>
+				<v-btn
+					color="red-darken-1"
+					variant="text"
+					@click="deleteDialog = false"
+				>
+					Cancel
+				</v-btn>
+				<v-btn
+					color="green-darken-1"
+					variant="text"
+					:loading="isLoading"
+					@click="deletePlaylist"
+				>
+					Delete
+				</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
 
-	<v-dialog v-model="addVideoDialog" width="800">
+	<v-dialog
+		v-model="renameDialog"
+		max-width="500"
+	>
+		<v-card>
+			<v-card-title>Rename Playlist</v-card-title>
+			<v-card-text>
+				<v-text-field
+					v-model="renamePlaylistInput"
+					label="New Name"
+					variant="solo-filled"
+					hide-details
+					autofocus
+					@keyup.enter="renamePlaylist"
+				/>
+			</v-card-text>
+			<v-card-actions>
+				<v-spacer />
+				<v-btn
+					color="red-darken-1"
+					variant="text"
+					@click="renameDialog = false"
+				>
+					Cancel
+				</v-btn>
+				<v-btn
+					color="green-darken-1"
+					variant="text"
+					:loading="isLoading"
+					@click="renamePlaylist"
+				>
+					Save
+				</v-btn>
+			</v-card-actions>
+		</v-card>
+	</v-dialog>
+
+	<v-dialog
+		v-model="queuePlaylistDialog"
+		width="auto"
+	>
+		<v-card>
+			<v-card-title>Queue Playlist</v-card-title>
+			<v-card-text> Do you really want to queue this playlist? </v-card-text>
+			<v-card-actions>
+				<v-spacer />
+				<v-btn
+					color="red-darken-1"
+					variant="text"
+					@click="queuePlaylistDialog = false"
+				>
+					Cancel
+				</v-btn>
+				<v-btn
+					color="green-darken-1"
+					variant="text"
+					:loading="isLoading"
+					@click="queuePlaylist"
+				>
+					Queue
+				</v-btn>
+			</v-card-actions>
+		</v-card>
+	</v-dialog>
+
+	<v-dialog
+		v-model="addVideoDialog"
+		width="800"
+	>
 		<v-card flat>
 			<v-card-title> <span class="text-h5">Adds a video to the playlist</span> </v-card-title>
 			<v-card-text>
 				<v-container>
 					<v-row>
-						<v-btn color="green-darken-1" variant="text" prepend-icon="mdi-magnify" @click="openSelectVideoDialog">Select Video</v-btn>
+						<v-btn
+							color="green-darken-1"
+							variant="text"
+							prepend-icon="mdi-magnify"
+							@click="openSelectVideoDialog"
+						>
+							Select Video
+						</v-btn>
 					</v-row>
 					<v-row>
-						<v-col cols="12" sm="6" class="pl-0">
-							<v-img :src="selectedVideo.thumbnail_url || placeholderImage" cover :aspect-ratio="16 / 9" width="auto" />
+						<v-col
+							cols="12"
+							sm="6"
+							class="pl-0"
+						>
+							<v-img
+								:src="selectedVideo.thumbnail_url || placeholderImage"
+								cover
+								:aspect-ratio="16 / 9"
+								width="auto"
+							/>
 						</v-col>
-						<v-col cols="12" sm="6" class="pr-0">
+						<v-col
+							cols="12"
+							sm="6"
+							class="pr-0"
+						>
 							<div class="d-flex flex-column justify-space-around h-100">
-								<div><v-text-field v-model="selectedVideo.title" label="Video" readonly variant="solo-filled" hide-details /></div>
-								<div><v-text-field v-model="selectedVideo.id" label="Video ID" readonly variant="solo-filled" hide-details /></div>
+								<div>
+									<v-text-field
+										v-model="selectedVideo.title"
+										label="Video"
+										readonly
+										variant="solo-filled"
+										hide-details
+									/>
+								</div>
+								<div>
+									<v-text-field
+										v-model="selectedVideo.id"
+										label="Video ID"
+										readonly
+										variant="solo-filled"
+										hide-details
+									/>
+								</div>
 							</div>
 						</v-col>
 					</v-row>
@@ -237,8 +406,22 @@
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer />
-				<v-btn color="red-darken-1" variant="text" @click="addVideoDialog = false">Close</v-btn>
-				<v-btn color="green-darken-1" variant="text" :disabled="!selectedVideo" :loading="isLoading" @click="addNewVideoToPlaylist">Add</v-btn>
+				<v-btn
+					color="red-darken-1"
+					variant="text"
+					@click="addVideoDialog = false"
+				>
+					Close
+				</v-btn>
+				<v-btn
+					color="green-darken-1"
+					variant="text"
+					:disabled="!selectedVideo"
+					:loading="isLoading"
+					@click="addNewVideoToPlaylist"
+				>
+					Add
+				</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
@@ -273,9 +456,7 @@
 					/>
 				</v-row>
 
-				<v-row
-					class="mb-0 mt-6"
-				>
+				<v-row class="mb-0 mt-6">
 					<v-btn
 						color="green-darken-1"
 						variant="text"
@@ -345,27 +526,66 @@
 		</v-card>
 	</v-dialog>
 
-	<SelectVideoDialog ref="selectVideoDialog" @select-video="selectVideo" @select-videos="addVideosDirectly" />
+	<SelectVideoDialog
+		ref="selectVideoDialog"
+		@select-video="selectVideo"
+		@select-videos="addVideosDirectly"
+	/>
 
-	<SelectGameDialog ref="selectGameDialog" @select-game="selectGame" />
+	<SelectGameDialog
+		ref="selectGameDialog"
+		@select-game="selectGame"
+	/>
 
-	<v-dialog v-model="editPositionDialog" max-width="500">
+	<v-dialog
+		v-model="editPositionDialog"
+		max-width="500"
+	>
 		<v-card>
-			<v-card-title class="headline">Edit Position</v-card-title>
+			<v-card-title class="headline">
+				Edit Position
+			</v-card-title>
 			<v-card-text>
-				<v-text-field v-model.number="editPositionInput" label="New Position" variant="solo-filled" hide-details />
+				<v-text-field
+					v-model.number="editPositionInput"
+					label="New Position"
+					variant="solo-filled"
+					hide-details
+				/>
 			</v-card-text>
 			<v-card-actions>
-				<v-btn color="red-darken-1" text @click="editPositionDialog = false">Cancel</v-btn>
-				<v-btn color="green-darken-1" text :loading="isLoading" @click="editPos">Save</v-btn>
+				<v-btn
+					color="red-darken-1"
+					text
+					@click="editPositionDialog = false"
+				>
+					Cancel
+				</v-btn>
+				<v-btn
+					color="green-darken-1"
+					text
+					:loading="isLoading"
+					@click="editPos"
+				>
+					Save
+				</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
 
-	<v-snackbar v-model="snackbar" timeout="3000">
+	<v-snackbar
+		v-model="snackbar"
+		timeout="3000"
+	>
 		{{ snackbarText }}
 		<template #actions>
-			<v-btn color="blue" variant="text" @click="snackbar = false">Close</v-btn>
+			<v-btn
+				color="blue"
+				variant="text"
+				@click="snackbar = false"
+			>
+				Close
+			</v-btn>
 		</template>
 	</v-snackbar>
 </template>
@@ -564,6 +784,42 @@ const editVideo = async (videoId) => {
 	}
 };
 
+const renameDialog = ref(false);
+const renamePlaylistInput = ref('');
+
+const openRenameDialog = () => {
+	renamePlaylistInput.value = playlistData.value.title;
+	renameDialog.value = true;
+};
+
+const renamePlaylist = async () => {
+	if (!renamePlaylistInput.value || renamePlaylistInput.value === playlistData.value.title) {
+		renameDialog.value = false;
+		return;
+	}
+
+	try {
+		isLoading.value = true;
+		await ky.post(`playlists/id/${id}`, {
+			json: {
+				title: renamePlaylistInput.value,
+			},
+		}).json();
+
+		playlistData.value.title = renamePlaylistInput.value;
+
+		snackbar.value = true;
+		snackbarText.value = 'Playlist renamed successfully.';
+		renameDialog.value = false;
+	} catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbar.value = true;
+		snackbarText.value = message;
+	} finally {
+		isLoading.value = false;
+	}
+};
+
 const addVideoDialog = ref(false);
 
 const openAddVideoDialog = () => {
@@ -636,6 +892,49 @@ const playlistData = ref({});
 
 const snackbar = ref(false);
 const snackbarText = ref('');
+
+const queuePlaylistDialog = ref(false);
+
+const queuePlaylist = async () => {
+	try {
+		isLoading.value = true;
+		await ky
+			.put('queue/playlist', {
+				json: {
+					playlistId: id,
+				},
+			})
+			.json();
+
+		snackbar.value = true;
+		snackbarText.value = 'Successfully queued playlist.';
+	}
+	catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbar.value = true;
+		snackbarText.value = message;
+	} finally {
+		isLoading.value = false;
+		queuePlaylistDialog.value = false;
+	}
+};
+
+const queueVideo = async (videoId) => {
+	try {
+		isLoading.value = true;
+
+		await ky.put('queue/video', { json: { videoId } }).json();
+
+		snackbar.value = true;
+		snackbarText.value = 'Successfully queued video.';
+	} catch (error) {
+		const message = await error.response?.text() || error.message;
+		snackbar.value = true;
+		snackbarText.value = message;
+	} finally {
+		isLoading.value = false;
+	}
+};
 
 const addNewVideoToPlaylist = async () => {
 	const videoData = {
