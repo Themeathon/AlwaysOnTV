@@ -42,18 +42,20 @@ class AddVideoToPlaylist extends AbstractEndpoint {
 	async checkVideo (ctx, next) {
 		let { videoId } = ctx.request.body;
 
-		const videoIds = Array.isArray(videoId) ? videoId : [videoId];
+		const requestedVideoIds = Array.isArray(videoId) ? videoId : [videoId];
 
-		const existingVideos = await VideoDatabase.selectIn('id', videoIds);
-		const existingVideoIds = existingVideos.map(v => v.id);
+		const existingVideos = await VideoDatabase.selectIn('id', requestedVideoIds);
+		const foundDbIds = existingVideos.map(v => v.id);
 
-		const missingVideos = videoIds.filter(id => !existingVideoIds.includes(id));
+		const validVideoIdsInOrder = requestedVideoIds.filter(id => foundDbIds.includes(id));
+
+		const missingVideos = requestedVideoIds.filter(id => !foundDbIds.includes(id));
 
 		if (missingVideos.length > 0) {
 			return super.error(ctx, `Couldn't find video(s) with ID(s) ${missingVideos.join(', ')}`);
 		}
 
-		ctx.videoIds = existingVideoIds;
+		ctx.videoIds = validVideoIdsInOrder;
 
 		return next();
 	}

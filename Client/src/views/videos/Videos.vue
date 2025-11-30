@@ -1584,8 +1584,31 @@ const addVideoToPlaylist = async () => {
 	try {
 		isLoading.value = true;
 
+		let videosToSend = videos.value.filter(v => selectedVideoIds.value.includes(v.id));
+
+		videosToSend.sort((a, b) => {
+			const field = sortBy.value;
+			let valA = a[field];
+			let valB = b[field];
+
+			const modifier = sortDesc.value ? -1 : 1;
+
+			valA = valA ?? '';
+			valB = valB ?? '';
+
+			if (typeof valA === 'string' && typeof valB === 'string') {
+				return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) * modifier;
+			}
+
+			if (valA < valB) return -1 * modifier;
+			if (valA > valB) return 1 * modifier;
+			return 0;
+		});
+
+		const sortedIds = videosToSend.map(v => v.id);
+
 		await ky.put(`playlists/id/${selectedPlaylist.value.id}/video`, {
-			json: { videoId: selectedVideoIds.value },
+			json: { videoId: sortedIds },
 		}).json();
 
 		const count = selectedVideoIds.value.length;
@@ -1598,14 +1621,12 @@ const addVideoToPlaylist = async () => {
 
 	} catch (error) {
 		let errorMessage = 'An unknown error occurred.';
-
 		try {
 			const errorText = await error.response.text();
 			errorMessage = errorText;
-		} catch (e) {
+		} catch (error) {
 			errorMessage = error.message;
 		}
-
 		showSnackbar(`Error adding video to playlist: ${errorMessage}`);
 	} finally {
 		isLoading.value = false;
