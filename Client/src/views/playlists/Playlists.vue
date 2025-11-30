@@ -35,10 +35,10 @@
 			>
 				<v-col
 					cols="12"
-					sm="12"
-					md="6"
-					lg="4"
-					xl="3"
+					sm="6"
+					md="4"
+					lg="3"
+					xl="2"
 				>
 					<v-text-field
 						v-model="playlistSearch"
@@ -46,9 +46,43 @@
 						append-inner-icon="mdi-magnify"
 						variant="solo-filled"
 						hide-details
+						density="compact"
 					/>
 				</v-col>
 
+				<v-col
+					cols="12"
+					sm="4"
+					md="3"
+					lg="2"
+				>
+					<v-select
+						v-model="sortBy"
+						:items="sortOptions"
+						item-title="title"
+						item-value="value"
+						label="Sort by"
+						variant="solo-filled"
+						hide-details
+						density="compact"
+					/>
+				</v-col>
+
+				<v-col cols="auto">
+					<v-btn
+						icon
+						variant="text"
+						@click="sortDesc = !sortDesc"
+					>
+						<v-icon>{{ sortDesc ? 'mdi-sort-descending' : 'mdi-sort-ascending' }}</v-icon>
+						<v-tooltip
+							activator="parent"
+							location="top"
+						>
+							{{ sortDesc ? 'Descending' : 'Ascending' }}
+						</v-tooltip>
+					</v-btn>
+				</v-col>
 				<v-col cols="auto">
 					<v-btn-toggle
 						v-model="viewMode"
@@ -76,14 +110,12 @@
 				<v-col
 					v-if="viewMode === 'grid'"
 					cols="12"
-					sm="6"
-					md="6"
-					lg="4"
-					xl="3"
+					md="3"
 				>
 					<v-pagination
 						v-model="page"
 						:length="chunkedPlaylists.length"
+						density="compact"
 					/>
 				</v-col>
 			</v-row>
@@ -124,7 +156,7 @@
 												:src="item.thumbnail_url"
 												:lazy-src="placeholderImage"
 												cover
-												width="140"
+												width="100%"
 												:aspect-ratio="16 / 9"
 												v-bind="props"
 											/>
@@ -248,7 +280,7 @@
 									:lazy-src="placeholderImage"
 									cover
 									width="140"
-									aspect-ratio="16/9"
+									:aspect-ratio="16/9"
 									class="mr-4 rounded"
 								/>
 							</template>
@@ -629,11 +661,30 @@ import { Duration } from 'luxon';
 
 const snackbar = ref(false);
 const snackbarText = ref('');
+
 const viewMode = ref(localStorage.getItem('playlists_view_mode') || 'grid');
 
 watch(viewMode, (newValue) => {
 	localStorage.setItem('playlists_view_mode', newValue);
 });
+
+const sortBy = ref(localStorage.getItem('playlists_sort_by') || 'title');
+const sortDesc = ref(localStorage.getItem('playlists_sort_desc') === 'true');
+
+watch(sortBy, (newValue) => {
+	localStorage.setItem('playlists_sort_by', newValue);
+});
+
+watch(sortDesc, (newValue) => {
+	localStorage.setItem('playlists_sort_desc', newValue);
+});
+
+const sortOptions = [
+	{ title: 'Title', value: 'title' },
+	{ title: 'Video Count', value: 'videoCount' },
+	{ title: 'Length', value: 'playlistLength' },
+	{ title: 'ID', value: 'id' },
+];
 
 const getPlaylistLengthFormatted = length => {
 	const progress = Duration.fromObject({ seconds: length });
@@ -760,11 +811,31 @@ const queuePlaylist = async () => {
 const { name } = useDisplay();
 
 const sortedPlaylists = computed(() => {
-	return _.filter(playlists.value, (playlist) => {
+	const filtered = _.filter(playlists.value, (playlist) => {
 		if (!playlistSearch.value) return true;
-		if (playlist.title === 'Random Playlist') return true;
-
 		return playlist.title.toLowerCase().includes(playlistSearch.value.toLowerCase());
+	});
+
+	return filtered.sort((a, b) => {
+		const field = sortBy.value;
+		let valA = a[field];
+		let valB = b[field];
+
+		if (a.randomPlaylist) return -1;
+		if (b.randomPlaylist) return 1;
+
+		const modifier = sortDesc.value ? -1 : 1;
+
+		valA = valA ?? '';
+		valB = valB ?? '';
+
+		if (typeof valA === 'string' && typeof valB === 'string') {
+			return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) * modifier;
+		}
+
+		if (valA < valB) return -1 * modifier;
+		if (valA > valB) return 1 * modifier;
+		return 0;
 	});
 });
 
@@ -772,30 +843,20 @@ const chunkedPlaylists = computed(() => {
 	let chunk = 6;
 
 	switch (name.value) {
-		case 'xs':
-			chunk = 2;
-			break;
-		case 'sm':
-			chunk = 2;
-			break;
-		case 'md':
-			chunk = 4;
-			break;
-		case 'lg':
-			chunk = 6;
-			break;
-		case 'xl':
-			chunk = 8;
-			break;
-		case 'xxl':
-			chunk = 12;
-			break;
-		default:
-			chunk = 12;
-			break;
+		case 'xs': chunk = 2; break;
+		case 'sm': chunk = 2; break;
+		case 'md': chunk = 4; break;
+		case 'lg': chunk = 6; break;
+		case 'xl': chunk = 8; break;
+		case 'xxl': chunk = 12; break;
+		default: chunk = 12; break;
 	}
 
 	return _.chunk(sortedPlaylists.value, chunk);
+});
+
+watch([playlistSearch, sortBy, sortDesc], () => {
+	page.value = 1;
 });
 
 watch(chunkedPlaylists, (newValue) => {
