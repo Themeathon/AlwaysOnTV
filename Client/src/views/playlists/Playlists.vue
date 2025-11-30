@@ -1,9 +1,7 @@
 <template>
-	<v-row
-		justify="center"
-		class="pa-8"
-	>
-		<div class="mb-4">
+	<div>
+
+		<div class="pa-8 text-center">
 			<v-btn
 				color="primary"
 				variant="outlined"
@@ -27,8 +25,14 @@
 
 		<v-divider :thickness="3" />
 
-		<v-container id="paginationContainer">
-			<v-row justify="center">
+		<v-container
+			id="paginationContainer"
+			fluid
+		>
+			<v-row
+				justify="center"
+				align="center"
+			>
 				<v-col
 					cols="12"
 					sm="12"
@@ -44,7 +48,33 @@
 						hide-details
 					/>
 				</v-col>
+
+				<v-col cols="auto">
+					<v-btn-toggle
+						v-model="viewMode"
+						mandatory
+						density="compact"
+						color="primary"
+						variant="outlined"
+						divided
+					>
+						<v-btn
+							value="grid"
+							icon="mdi-view-grid"
+						>
+							<v-icon>mdi-view-grid</v-icon>
+						</v-btn>
+						<v-btn
+							value="list"
+							icon="mdi-view-list"
+						>
+							<v-icon>mdi-view-list</v-icon>
+						</v-btn>
+					</v-btn-toggle>
+				</v-col>
+
 				<v-col
+					v-if="viewMode === 'grid'"
 					cols="12"
 					sm="6"
 					md="6"
@@ -59,123 +89,205 @@
 			</v-row>
 		</v-container>
 
-		<v-container>
-			<v-row class="mb-4">
-				<v-col
-					v-for="item in chunkedPlaylists[page - 1]"
-					:key="item.title"
-					cols="12"
-					sm="12"
-					md="6"
-					lg="4"
-					xl="3"
-					xxl="2"
-				>
-					<v-hover v-slot="{ isHovering: hoveringCard, props: propsCard }">
-						<v-card
-							class="mt-4 mx-2 text-center h-100 d-flex flex-column"
-							:elevation="hoveringCard ? 10 : 0"
-							v-bind="propsCard"
-						>
-							<div>
-								<v-hover v-slot="{ isHovering, props }">
-									<v-card
-										rounded="false"
-										flat
-									>
-										<v-img
-											:src="item.thumbnail_url"
-											:lazy-src="placeholderImage"
-											cover
-											width="100%"
-											:aspect-ratio="16 / 9"
-											v-bind="props"
-										/>
-
-										<v-overlay
-											:model-value="isHovering"
-											contained
-											class="align-center justify-center"
-											scrim="#000000"
-											v-bind="props"
+		<div>
+			<v-container
+				v-if="viewMode === 'grid'"
+				fluid
+			>
+				<v-row class="mb-4">
+					<v-col
+						v-for="item in chunkedPlaylists[page - 1]"
+						:key="item.title"
+						cols="12"
+						sm="12"
+						md="6"
+						lg="4"
+						xl="3"
+						xxl="2"
+					>
+						<v-hover v-slot="{ isHovering: hoveringCard, props: propsCard }">
+							<v-card
+								class="mt-4 mx-2 text-center h-100 d-flex flex-column"
+								:elevation="hoveringCard ? 10 : 0"
+								v-bind="propsCard"
+							>
+								<div>
+									<v-hover v-slot="{ isHovering, props }">
+										<v-card
+											rounded="false"
+											flat
 										>
-											<div class="d-flex flex-column h-100 align-center">
-												<v-spacer />
+											<v-img
+												:src="item.thumbnail_url"
+												:lazy-src="placeholderImage"
+												cover
+												width="100%"
+												:aspect-ratio="16 / 9"
+												v-bind="props"
+											/>
 
-												<v-row>
-													<v-btn
-														v-if="!item.randomPlaylist"
-														class="mx-2"
-														icon="mdi-clock-outline"
-														size="large"
-														color="orange-darken-4"
-														variant="flat"
-														:disabled="!item.videoCount"
-														@click="openQueuePlaylistDialog(item)"
-													>
-														<v-tooltip
-															activator="parent"
-															location="top"
-															:eager="false"
+											<v-overlay
+												:model-value="isHovering"
+												contained
+												class="align-center justify-center"
+												scrim="#000000"
+												v-bind="props"
+											>
+												<div class="d-flex flex-column h-100 align-center">
+													<v-spacer />
+
+													<v-row>
+														<v-btn
+															v-if="!item.randomPlaylist"
+															class="mx-2"
+															icon="mdi-clock-outline"
+															size="large"
+															color="orange-darken-4"
+															variant="flat"
+															:disabled="!item.videoCount"
+															@click="openQueuePlaylistDialog(item)"
 														>
-															Queue Playlist
-														</v-tooltip>
-														<v-icon />
-													</v-btn>
+															<v-tooltip
+																activator="parent"
+																location="top"
+																:eager="false"
+															>
+																Queue Playlist
+															</v-tooltip>
+															<v-icon />
+														</v-btn>
 
-													<v-btn
-														class="mx-2"
-														icon="mdi-file-edit"
-														size="large"
-														color="green-darken-1"
-														variant="flat"
-														:to="{
-															name: item.randomPlaylist ? 'random-playlist-view' : 'playlist-view',
-															params: { id: item?.id },
-														}"
-													>
-														<v-tooltip
-															activator="parent"
-															location="top"
-															:eager="false"
-															attach="#paginationContainer"
+														<v-btn
+															class="mx-2"
+															icon="mdi-file-edit"
+															size="large"
+															color="green-darken-1"
+															variant="flat"
+															:to="{
+																name: item.randomPlaylist ? 'random-playlist-view' : 'playlist-view',
+																params: { id: item?.id },
+															}"
 														>
-															Edit Playlist
-														</v-tooltip>
-														<v-icon />
-													</v-btn>
-												</v-row>
+															<v-tooltip
+																activator="parent"
+																location="top"
+																:eager="false"
+																attach="#paginationContainer"
+															>
+																Edit Playlist
+															</v-tooltip>
+															<v-icon />
+														</v-btn>
+													</v-row>
 
-												<v-spacer />
-											</div>
-										</v-overlay>
-									</v-card>
-								</v-hover>
-							</div>
+													<v-spacer />
+												</div>
+											</v-overlay>
+										</v-card>
+									</v-hover>
+								</div>
 
-							<v-card-title class="text-wrap">
-								<span :title="item.title">{{ item.title }}</span>
-							</v-card-title>
+								<v-card-title class="text-wrap">
+									<span :title="item.title">{{ item.title }}</span>
+								</v-card-title>
 
-							<v-spacer />
+								<v-spacer />
 
-							<v-card-subtitle class="mb-2">
-								<p>
-									<strong>Total Videos:</strong> {{ item.videoCount }}
-								</p>
+								<v-card-subtitle class="mb-2">
+									<p>
+										<strong>Total Videos:</strong> {{ item.videoCount }}
+									</p>
 
-								<p>
-									<strong>Estimated Length:</strong> {{ getPlaylistLengthFormatted(item.playlistLength) }}
-								</p>
-							</v-card-subtitle>
-						</v-card>
-					</v-hover>
-				</v-col>
-			</v-row>
-		</v-container>
-	</v-row>
+									<p>
+										<strong>Estimated Length:</strong> {{ getPlaylistLengthFormatted(item.playlistLength) }}
+									</p>
+								</v-card-subtitle>
+							</v-card>
+						</v-hover>
+					</v-col>
+				</v-row>
+			</v-container>
 
-	<!-- Create Playlist -->
+			<v-card
+				v-if="viewMode === 'list'"
+				class="mx-4 mb-4"
+				flat
+				style="height: 70vh;"
+			>
+				<v-virtual-scroll
+					:items="sortedPlaylists"
+					height="100%"
+					item-height="90"
+				>
+					<template #default="{ item }">
+						<v-list-item class="py-2">
+							<template #prepend>
+								<v-img
+									:src="item.thumbnail_url || placeholderImage"
+									:lazy-src="placeholderImage"
+									cover
+									width="140"
+									aspect-ratio="16/9"
+									class="mr-4 rounded"
+								/>
+							</template>
+
+							<v-list-item-title class="text-h6">
+								{{ item.title }}
+							</v-list-item-title>
+
+							<v-list-item-subtitle class="mt-1">
+								<strong>Videos:</strong> {{ item.videoCount }}
+								<span class="mx-2">•</span>
+								<strong>Length:</strong> {{ getPlaylistLengthFormatted(item.playlistLength) }}
+							</v-list-item-subtitle>
+
+							<template #append>
+								<div class="d-flex align-center">
+									<v-btn
+										v-if="!item.randomPlaylist"
+										icon="mdi-clock-outline"
+										variant="text"
+										color="orange-darken-4"
+										:disabled="!item.videoCount"
+										@click="openQueuePlaylistDialog(item)"
+									>
+										<v-tooltip
+											activator="parent"
+											location="top"
+										>
+											Queue Playlist
+										</v-tooltip>
+										<v-icon>mdi-clock-outline</v-icon>
+									</v-btn>
+
+									<v-btn
+										icon="mdi-file-edit"
+										variant="text"
+										color="green-darken-1"
+										:to="{
+											name: item.randomPlaylist ? 'random-playlist-view' : 'playlist-view',
+											params: { id: item?.id },
+										}"
+									>
+										<v-tooltip
+											activator="parent"
+											location="top"
+										>
+											Edit Playlist
+										</v-tooltip>
+										<v-icon>mdi-file-edit</v-icon>
+									</v-btn>
+								</div>
+							</template>
+						</v-list-item>
+						<v-divider />
+					</template>
+				</v-virtual-scroll>
+			</v-card>
+		</div>
+	</div>
+
 	<v-dialog
 		v-model="createPlaylistDialog"
 		width="800"
@@ -223,7 +335,6 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Import Playlist -->
 	<v-dialog
 		v-model="importPlaylistDialog"
 		width="800"
@@ -378,13 +489,11 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Select Game -->
 	<SelectGameDialog
 		ref="selectGameDialog"
 		@select-game="selectGame"
 	/>
 
-	<!-- Queue Playlist -->
 	<v-dialog
 		v-model="queuePlaylistDialog"
 		width="auto"
@@ -415,7 +524,6 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Snackbar -->
 	<v-snackbar
 		v-model="snackbar"
 		timeout="3000"
@@ -447,15 +555,17 @@ import { Duration } from 'luxon';
 
 const snackbar = ref(false);
 const snackbarText = ref('');
+const viewMode = ref(localStorage.getItem('playlists_view_mode') || 'grid');
+
+watch(viewMode, (newValue) => {
+	localStorage.setItem('playlists_view_mode', newValue);
+});
 
 const getPlaylistLengthFormatted = length => {
 	const progress = Duration.fromObject({ seconds: length });
 
 	return progress.toFormat('hh:mm:ss');
 };
-
-// ---
-// Select Game
 
 const selectGameDialog = ref(null);
 const selectedGame = ref(false);
@@ -479,8 +589,6 @@ const getGameTitle = () => {
 const getGameID = () => {
 	return selectedGame.value?.id;
 };
-
-// ---
 
 const searchInput = ref('');
 const selectedYTplaylist = ref(false);
@@ -576,41 +684,30 @@ const queuePlaylist = async () => {
 };
 
 const { name } = useDisplay();
-const chunkedPlaylists = computed(() => {
-	let chunk = 6; // Default for lg+
 
-	switch (name.value) {
-	case 'xs':
-		chunk = 2;
-		break;
-	case 'sm':
-		chunk = 2;
-		break;
-	case 'md':
-		chunk = 4;
-		break;
-	case 'lg':
-		chunk = 6;
-		break;
-	case 'xl':
-		chunk = 8;
-		break;
-	case 'xxl':
-		chunk = 12;
-		break;
-	default:
-		chunk = 12;
-		break;
-	}
-
-	const filtered = _.filter(playlists.value, (playlist) => {
+const sortedPlaylists = computed(() => {
+	return _.filter(playlists.value, (playlist) => {
 		if (!playlistSearch.value) return true;
 		if (playlist.title === 'Random Playlist') return true;
 
 		return playlist.title.toLowerCase().includes(playlistSearch.value.toLowerCase());
 	});
+});
 
-	return _.chunk(filtered, chunk);
+const chunkedPlaylists = computed(() => {
+	let chunk = 6;
+
+	switch (name.value) {
+		case 'xs': chunk = 2; break;
+		case 'sm': chunk = 2; break;
+		case 'md': chunk = 4; break;
+		case 'lg': chunk = 6; break;
+		case 'xl': chunk = 8; break;
+		case 'xxl': chunk = 12; break;
+		default: chunk = 12; break;
+	}
+
+	return _.chunk(sortedPlaylists.value, chunk);
 });
 
 watch(chunkedPlaylists, (newValue) => {

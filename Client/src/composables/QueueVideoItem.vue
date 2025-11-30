@@ -1,6 +1,16 @@
 <template>
 	<v-list-item
-		class="py-2"
+		class="draggable-item py-2 mb-1 rounded"
+		:class="{
+			'drag-source': isDragSource,
+			'drag-target': isDragTarget
+		}"
+		draggable="true"
+		@dragstart="onDragStart"
+		@dragenter.prevent="onDragEnter"
+		@dragover.prevent
+		@dragend="onDragEnd"
+		@drop="onDrop"
 	>
 		<v-list-item-title>
 			{{ item.title }}
@@ -15,7 +25,14 @@
 		</v-list-item-subtitle>
 
 		<template #prepend>
-			<span class="mr-5 text-center">
+			<v-icon
+				class="mr-4 cursor-grab"
+				color="grey-darken-1"
+			>
+				mdi-drag-horizontal-variant
+			</v-icon>
+
+			<span class="mr-5 text-center font-weight-bold" style="min-width: 20px;">
 				{{ index + 1 }}
 			</span>
 
@@ -42,7 +59,7 @@
 				:aspect-ratio="16/9"
 				width="125"
 				cover
-				class="mr-5"
+				class="mr-5 rounded"
 			/>
 
 			<v-btn
@@ -129,9 +146,29 @@
 import placeholderImage from '@/assets/placeholder-500x700.jpg';
 import { Duration } from 'luxon';
 
-const props = defineProps(['item', 'index', 'isLoading']);
+const props = defineProps(['item', 'index', 'isLoading', 'isDragSource', 'isDragTarget']);
 
-const emit = defineEmits(['openEditPos', 'deleteFromQueue', 'editPosStart', 'editPosEnd']);
+const emit = defineEmits([
+	'openEditPos', 'deleteFromQueue', 'editPosStart', 'editPosEnd',
+	'drag-start', 'drag-enter', 'drag-end', 'drop',
+]);
+
+const onDragStart = (event) => {
+	event.dataTransfer.effectAllowed = 'move';
+	emit('drag-start', event, props.item, props.index);
+};
+
+const onDragEnter = () => {
+	emit('drag-enter', props.item, props.index);
+};
+
+const onDragEnd = () => {
+	emit('drag-end');
+};
+
+const onDrop = (event) => {
+	emit('drop', event, props.item, props.index);
+};
 
 const openEditPos = index => {
 	emit('openEditPos', index);
@@ -155,3 +192,30 @@ const formatVideoLength = length => {
 	return progress.toFormat('hh:mm:ss');
 };
 </script>
+
+<style scoped>
+.cursor-grab {
+	cursor: grab;
+}
+.cursor-grab:active {
+	cursor: grabbing;
+}
+
+.draggable-item {
+	transition: all 0.2s ease-in-out;
+	border: 2px solid transparent !important;
+}
+
+.drag-source {
+	opacity: 0.4;
+	background-color: #E0E0E0;
+	box-shadow: none !important;
+}
+
+.drag-target {
+	border-color: rgb(var(--v-theme-primary)) !important;
+	background-color: rgba(var(--v-theme-primary), 0.08);
+	transform: scale(1.005);
+	z-index: 1;
+}
+</style>

@@ -16,7 +16,10 @@
 	<v-divider :thickness="3" />
 
 	<v-container>
-		<v-row justify="center">
+		<v-row
+			justify="center"
+			align="center"
+		>
 			<v-col
 				cols="12"
 				sm="6"
@@ -29,9 +32,36 @@
 					label="Search games"
 					append-inner-icon="mdi-magnify"
 					variant="solo-filled"
+					hide-details
 				/>
 			</v-col>
+
+			<v-col cols="auto">
+				<v-btn-toggle
+					v-model="viewMode"
+					mandatory
+					density="compact"
+					color="primary"
+					variant="outlined"
+					divided
+				>
+					<v-btn
+						value="grid"
+						icon="mdi-view-grid"
+					>
+						<v-icon>mdi-view-grid</v-icon>
+					</v-btn>
+					<v-btn
+						value="list"
+						icon="mdi-view-list"
+					>
+						<v-icon>mdi-view-list</v-icon>
+					</v-btn>
+				</v-btn-toggle>
+			</v-col>
+
 			<v-col
+				v-if="viewMode === 'grid'"
 				cols="12"
 				sm="6"
 				md="6"
@@ -46,7 +76,7 @@
 		</v-row>
 	</v-container>
 
-	<v-container>
+	<v-container v-if="viewMode === 'grid'">
 		<v-row class="mb-4">
 			<v-col
 				v-for="item in chunkedGames[page - 1]"
@@ -132,7 +162,62 @@
 		</v-row>
 	</v-container>
 
-	<!-- Create Game -->
+	<v-card
+		v-if="viewMode === 'list'"
+		class="mx-4 mb-4"
+		style="height: 70vh;"
+	>
+		<v-virtual-scroll
+			:items="sortedGames"
+			height="100%"
+			item-height="120"
+		>
+			<template #default="{ item }">
+				<v-list-item class="py-2">
+					<template #prepend>
+						<v-img
+							:src="item.thumbnail_url || placeholderImage"
+							:lazy-src="placeholderImage"
+							cover
+							width="80"
+							aspect-ratio="3/4"
+							class="mr-4 rounded"
+						/>
+					</template>
+
+					<v-list-item-title class="text-h6">
+						{{ item.title }}
+					</v-list-item-title>
+
+					<v-list-item-subtitle class="mt-1">
+						<strong>Twitch ID:</strong> {{ item.id }}
+						<span class="mx-2">•</span>
+						<strong>Videos:</strong> {{ item.videoCount }}
+					</v-list-item-subtitle>
+
+					<template #append>
+						<v-btn
+							v-if="item.id !== '499973'"
+							icon="mdi-trash-can"
+							variant="text"
+							color="red-darken-1"
+							@click="openDeleteDialog(item)"
+						>
+							<v-tooltip
+								activator="parent"
+								location="top"
+							>
+								Delete
+							</v-tooltip>
+							<v-icon>mdi-trash-can</v-icon>
+						</v-btn>
+					</template>
+				</v-list-item>
+				<v-divider />
+			</template>
+		</v-virtual-scroll>
+	</v-card>
+
 	<v-dialog
 		v-model="createGameDialog"
 		width="800"
@@ -212,9 +297,16 @@
 			<v-card-actions>
 				<div class="d-flex flex-column text-center">
 					<v-checkbox
+						v-model="addMultipleGames"
+						label="Add multiple games"
+						hide-details
+						density="compact"
+					/>
+					<v-checkbox
 						v-model="checkboxShowAdded"
 						label="Show added"
 						hide-details
+						density="compact"
 					/>
 					<span v-if="filteredSearchedGames.length">
 						Found {{ filteredSearchedGames.length }} games ({{ filteredSearchedGames.filter(g => g.isAdded).length }} already added)
@@ -235,7 +327,6 @@
 		</v-card>
 	</v-dialog>
 
-	<!-- Delete Game -->
 	<v-dialog
 		v-model="deleteDialog"
 		width="auto"
@@ -299,6 +390,12 @@ const games = ref([]);
 const searchedGames = ref([]);
 const searchErrorMessages = ref('');
 const checkboxShowAdded = ref(false);
+const addMultipleGames = ref(false);
+const viewMode = ref(localStorage.getItem('games_view_mode') || 'grid');
+
+watch(viewMode, (newValue) => {
+	localStorage.setItem('games_view_mode', newValue);
+});
 
 const filteredSearchedGames = computed(() => {
 	const filtered = [];
@@ -340,40 +437,28 @@ const snackbar = ref(false);
 const snackbarText = ref('');
 
 const { name } = useDisplay();
-const chunkedGames = computed(() => {
-	let chunk = 6; // Default for lg+
 
-	switch (name.value) {
-	case 'xs':
-		chunk = 4;
-		break;
-	case 'sm':
-		chunk = 6;
-		break;
-	case 'md':
-		chunk = 8;
-		break;
-	case 'lg':
-		chunk = 8;
-		break;
-	case 'xl':
-		chunk = 12;
-		break;
-	case 'xxl':
-		chunk = 12;
-		break;
-	default:
-		chunk = 12;
-		break;
-	}
-
-	const filtered = _.filter(games.value, (game) => {
+const sortedGames = computed(() => {
+	return _.filter(games.value, (game) => {
 		if (!gameSearch.value) return true;
-
 		return game.title.toLowerCase().includes(gameSearch.value.toLowerCase());
 	});
+});
 
-	return _.chunk(filtered, chunk);
+const chunkedGames = computed(() => {
+	let chunk = 6;
+
+	switch (name.value) {
+		case 'xs': chunk = 4; break;
+		case 'sm': chunk = 6; break;
+		case 'md': chunk = 8; break;
+		case 'lg': chunk = 8; break;
+		case 'xl': chunk = 12; break;
+		case 'xxl': chunk = 12; break;
+		default: chunk = 12; break;
+	}
+
+	return _.chunk(sortedGames.value, chunk);
 });
 
 watch(chunkedGames, (newValue) => {
@@ -396,7 +481,6 @@ const openCreateGameDialog = () => {
 const addNewGame = async (igdbGame) => {
 	const twitchGameID = findTwitchGameID(igdbGame);
 
-	// Check if the game already exists in the list
 	const isDuplicate = games.value.some(
 		(game) => game.title === igdbGame.name || game.id === twitchGameID,
 	);
@@ -417,7 +501,9 @@ const addNewGame = async (igdbGame) => {
 
 		await fetchGames();
 
-		createGameDialog.value = false;
+		if (!addMultipleGames.value) {
+			createGameDialog.value = false;
+		}
 
 		snackbar.value = true;
 		snackbarText.value = 'Successfully added game.';
