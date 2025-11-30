@@ -818,7 +818,7 @@
 						show-size
 					/>
 				</v-row>
-				<v-row class="mb-0 mt-2">
+				<v-row class="mb-0 mt-6">
 					<v-btn
 						color="green-darken-1"
 						variant="text"

@@ -54,7 +54,9 @@
 						item-height="100"
 					>
 						<template #default="{ item }">
-							<v-list-item>
+							<v-list-item
+								link
+							>
 								<v-list-item-title>
 									{{ playlistData.videoInfo[item.id].title }}
 								</v-list-item-title>

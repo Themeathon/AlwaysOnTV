@@ -97,6 +97,7 @@
 						<template #default="{ item }">
 							<v-list-item
 								class="draggable-item"
+								link
 								:class="{
 									'drag-source': draggedItem && draggedItem.index === item.index,
 									'drag-target': dragOverIndex === item.index && draggedItem && draggedItem.index !== item.index
