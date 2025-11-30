@@ -1,8 +1,6 @@
 <template>
 	<v-container class="h-100">
-		<v-card
-			class="mx-auto h-100"
-		>
+		<v-card class="mx-auto h-100">
 			<div class="d-flex flex-column h-100">
 				<v-card-text>
 					<div class="d-flex align-center">
@@ -103,10 +101,7 @@
 										mdi-drag-horizontal-variant
 									</v-icon>
 
-									<div
-										class="mx-2 text-center"
-										style="min-width: 30px;"
-									>
+									<div class="mx-2 text-center" style="min-width: 30px;">
 										<span class="text-center font-weight-bold">
 											{{ item.index }}
 										</span>
@@ -159,24 +154,44 @@
 								</template>
 
 								<template #append>
-									<v-btn
-										icon="mdi-trash-can"
-										size="x-small"
-										variant="tonal"
-										class="mr-2"
-										color="red"
-										:loading="isLoading"
-										@click="removeVideoFromPlaylist(item.index)"
-									>
-										<v-tooltip
-											activator="parent"
-											location="top"
-											:eager="false"
+									<div class="d-flex align-center">
+										<v-btn
+											icon="mdi-file-edit"
+											size="x-small"
+											variant="tonal"
+											class="mr-2"
+											color="green-darken-1"
+											@click="openEditVideoDialog(item)"
 										>
-											Remove Video From Playlist
-										</v-tooltip>
-										<v-icon />
-									</v-btn>
+											<v-tooltip
+												activator="parent"
+												location="top"
+												:eager="false"
+											>
+												Edit Video Details
+											</v-tooltip>
+											<v-icon>mdi-file-edit</v-icon>
+										</v-btn>
+
+										<v-btn
+											icon="mdi-trash-can"
+											size="x-small"
+											variant="tonal"
+											class="mr-2"
+											color="red"
+											:loading="isLoading"
+											@click="removeVideoFromPlaylist(item.index)"
+										>
+											<v-tooltip
+												activator="parent"
+												location="top"
+												:eager="false"
+											>
+												Remove Video From Playlist
+											</v-tooltip>
+											<v-icon>mdi-trash-can</v-icon>
+										</v-btn>
+									</div>
 								</template>
 							</v-list-item>
 						</template>
@@ -186,89 +201,34 @@
 		</v-card>
 	</v-container>
 
-	<v-dialog
-		v-model="deleteDialog"
-		width="auto"
-	>
+	<v-dialog v-model="deleteDialog" width="auto">
 		<v-card flat>
 			<v-card-title> Deleted the playlist </v-card-title>
 			<v-card-text> Do you really want to delete the playlist? </v-card-text>
 			<v-card-actions>
 				<v-spacer />
-				<v-btn
-					color="red-darken-1"
-					variant="text"
-					@click="deleteDialog = false"
-				>
-					Cancel
-				</v-btn>
-				<v-btn
-					color="green-darken-1"
-					variant="text"
-					:loading="isLoading"
-					@click="deletePlaylist"
-				>
-					Delete
-				</v-btn>
+				<v-btn color="red-darken-1" variant="text" @click="deleteDialog = false">Cancel</v-btn>
+				<v-btn color="green-darken-1" variant="text" :loading="isLoading" @click="deletePlaylist">Delete</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
 
-	<v-dialog
-		v-model="addVideoDialog"
-		width="800"
-	>
+	<v-dialog v-model="addVideoDialog" width="800">
 		<v-card flat>
 			<v-card-title> <span class="text-h5">Adds a video to the playlist</span> </v-card-title>
 			<v-card-text>
 				<v-container>
 					<v-row>
-						<v-btn
-							color="green-darken-1"
-							variant="text"
-							prepend-icon="mdi-magnify"
-							@click="openSelectVideoDialog"
-						>
-							Select Video
-						</v-btn>
+						<v-btn color="green-darken-1" variant="text" prepend-icon="mdi-magnify" @click="openSelectVideoDialog">Select Video</v-btn>
 					</v-row>
 					<v-row>
-						<v-col
-							cols="12"
-							sm="6"
-							class="pl-0"
-						>
-							<v-img
-								:src="selectedVideo.thumbnail_url || placeholderImage"
-								cover
-								:aspect-ratio="16 / 9"
-								width="auto"
-							/>
+						<v-col cols="12" sm="6" class="pl-0">
+							<v-img :src="selectedVideo.thumbnail_url || placeholderImage" cover :aspect-ratio="16 / 9" width="auto" />
 						</v-col>
-						<v-col
-							cols="12"
-							sm="6"
-							class="pr-0"
-						>
+						<v-col cols="12" sm="6" class="pr-0">
 							<div class="d-flex flex-column justify-space-around h-100">
-								<div>
-									<v-text-field
-										v-model="selectedVideo.title"
-										label="Video"
-										readonly
-										variant="solo-filled"
-										hide-details
-									/>
-								</div>
-								<div>
-									<v-text-field
-										v-model="selectedVideo.id"
-										label="Video ID"
-										readonly
-										variant="solo-filled"
-										hide-details
-									/>
-								</div>
+								<div><v-text-field v-model="selectedVideo.title" label="Video" readonly variant="solo-filled" hide-details /></div>
+								<div><v-text-field v-model="selectedVideo.id" label="Video ID" readonly variant="solo-filled" hide-details /></div>
 							</div>
 						</v-col>
 					</v-row>
@@ -277,61 +237,107 @@
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer />
-				<v-btn
-					color="red-darken-1"
-					variant="text"
-					@click="addVideoDialog = false"
-				>
-					Close
-				</v-btn>
-				<v-btn
-					color="green-darken-1"
-					variant="text"
-					:disabled="!selectedVideo"
-					:loading="isLoading"
-					@click="addNewVideoToPlaylist"
-				>
-					Add
-				</v-btn>
+				<v-btn color="red-darken-1" variant="text" @click="addVideoDialog = false">Close</v-btn>
+				<v-btn color="green-darken-1" variant="text" :disabled="!selectedVideo" :loading="isLoading" @click="addNewVideoToPlaylist">Add</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
 
-	<SelectVideoDialog
-		ref="selectVideoDialog"
-		@select-video="selectVideo"
-		@select-videos="addVideosDirectly"
-	/>
-
 	<v-dialog
-		v-model="editPositionDialog"
-		max-width="500"
+		v-model="editVideoDialog"
+		width="500px"
 	>
 		<v-card>
 			<v-card-title class="headline">
-				Edit Position
+				Edit Video
 			</v-card-title>
 			<v-card-text>
-				<v-text-field
-					v-model.number="editPositionInput"
-					label="New Position"
-					variant="solo-filled"
-					hide-details
-				/>
+				<v-row class="mb-0">
+					<v-text-field
+						v-model="editingVideo.title"
+						label="New Title"
+						variant="solo-filled"
+						hide-details
+					/>
+				</v-row>
+
+				<v-row class="mt-4">
+					<v-file-input
+						v-model="thumbnailFile"
+						accept="image/*"
+						label="Upload Custom Thumbnail"
+						prepend-icon="mdi-camera"
+						variant="solo-filled"
+						hide-details
+						show-size
+					/>
+				</v-row>
+
+				<v-row
+					class="mb-0 mt-6"
+				>
+					<v-btn
+						color="green-darken-1"
+						variant="text"
+						prepend-icon="mdi-magnify"
+						@click="openSelectGameDialog"
+					>
+						Select Game
+					</v-btn>
+				</v-row>
+				<v-row class="ml-0">
+					<v-col
+						cols="12"
+						sm="4"
+						class="pl-0"
+					>
+						<v-img
+							:src="getGameThumbnailURL()"
+							cover
+							:aspect-ratio="5 / 7"
+							width="auto"
+						/>
+					</v-col>
+					<v-col
+						cols="12"
+						sm="8"
+						class="pr-0"
+					>
+						<div class="d-flex flex-column justify-space-around h-100 text-center">
+							<div>
+								<p class="text-h5">
+									<strong>Game Title</strong>
+								</p>
+								<p class="text-h5">
+									{{ getGameTitle() }}
+								</p>
+							</div>
+							<div>
+								<p class="text-h5">
+									<strong>Twitch ID</strong>
+								</p>
+								<p class="text-h5">
+									{{ getGameID() }}
+								</p>
+							</div>
+						</div>
+					</v-col>
+				</v-row>
 			</v-card-text>
 			<v-card-actions>
 				<v-btn
 					color="red-darken-1"
 					text
-					@click="editPositionDialog = false"
+					@click="editVideoDialog = false"
 				>
 					Cancel
 				</v-btn>
 				<v-btn
 					color="green-darken-1"
 					text
+					:disabled="!canSaveEdit"
 					:loading="isLoading"
-					@click="editPos"
+					@click="editVideo(editingVideo.id)"
 				>
 					Save
 				</v-btn>
@@ -339,19 +345,27 @@
 		</v-card>
 	</v-dialog>
 
-	<v-snackbar
-		v-model="snackbar"
-		timeout="3000"
-	>
+	<SelectVideoDialog ref="selectVideoDialog" @select-video="selectVideo" @select-videos="addVideosDirectly" />
+
+	<SelectGameDialog ref="selectGameDialog" @select-game="selectGame" />
+
+	<v-dialog v-model="editPositionDialog" max-width="500">
+		<v-card>
+			<v-card-title class="headline">Edit Position</v-card-title>
+			<v-card-text>
+				<v-text-field v-model.number="editPositionInput" label="New Position" variant="solo-filled" hide-details />
+			</v-card-text>
+			<v-card-actions>
+				<v-btn color="red-darken-1" text @click="editPositionDialog = false">Cancel</v-btn>
+				<v-btn color="green-darken-1" text :loading="isLoading" @click="editPos">Save</v-btn>
+			</v-card-actions>
+		</v-card>
+	</v-dialog>
+
+	<v-snackbar v-model="snackbar" timeout="3000">
 		{{ snackbarText }}
 		<template #actions>
-			<v-btn
-				color="blue"
-				variant="text"
-				@click="snackbar = false"
-			>
-				Close
-			</v-btn>
+			<v-btn color="blue" variant="text" @click="snackbar = false">Close</v-btn>
 		</template>
 	</v-snackbar>
 </template>
@@ -359,10 +373,11 @@
 <script setup>
 import ky, { isLoading } from '@/ky';
 
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import SelectVideoDialog from '@/composables/SelectVideoDialog.vue';
+import SelectGameDialog from '@/composables/SelectGameDialog.vue';
 
 import placeholderImage from '@/assets/placeholder-500x700.jpg';
 import { Duration } from 'luxon';
@@ -457,6 +472,96 @@ const getVideoLength = (videoId, asString = true) => {
 	const progress = Duration.fromObject({ seconds: videoInfo.length });
 
 	return asString ? progress.toFormat('hh:mm:ss') : videoInfo.length;
+};
+
+const editVideoDialog = ref(false);
+const editingVideo = ref({});
+const originalEditingVideo = ref({});
+const thumbnailFile = ref(null);
+const selectGameDialog = ref(null);
+const selectedGame = ref(null);
+const defaultGame = ref(null);
+
+const getGameThumbnailURL = () => selectedGame.value?.thumbnail_url || placeholderImage;
+const getGameTitle = () => selectedGame.value?.title || 'N/A';
+const getGameID = () => selectedGame.value?.id || 'N/A';
+
+const canSaveEdit = computed(() => {
+	if (!editingVideo.value || !originalEditingVideo.value) return false;
+	if (thumbnailFile.value) return true;
+	return editingVideo.value.title !== originalEditingVideo.value.title ||
+		selectedGame.value?.id !== originalEditingVideo.value.gameId;
+});
+
+watch(editVideoDialog, (newValue) => {
+	if (!newValue && defaultGame.value) {
+		selectedGame.value = defaultGame.value;
+	}
+});
+
+const openSelectGameDialog = () => selectGameDialog.value.open();
+const selectGame = (game) => selectedGame.value = game;
+
+const openEditVideoDialog = async (item) => {
+	const videoId = item.id;
+	const videoInfo = playlistData.value.videoInfo[videoId];
+
+	if (!videoInfo) return;
+
+	editingVideo.value = { ...videoInfo };
+	originalEditingVideo.value = { ...videoInfo };
+	thumbnailFile.value = null;
+
+	try {
+		let game = playlistData.value.gameInfo[videoInfo.gameId];
+		if (!game) {
+			game = await ky.get(`games/id/${videoInfo.gameId}`).json();
+		}
+		selectedGame.value = game;
+	} catch {
+		selectedGame.value = defaultGame.value;
+	}
+	editVideoDialog.value = true;
+};
+
+const editVideo = async (videoId) => {
+	if (!canSaveEdit.value) return;
+	try {
+		isLoading.value = true;
+
+		if (editingVideo.value.title !== originalEditingVideo.value.title || selectedGame.value?.id !== originalEditingVideo.value.gameId) {
+			await ky.post(`videos/id/${videoId}`, {
+				json: {
+					title: editingVideo.value.title,
+					gameId: selectedGame.value?.id,
+				},
+			}).json();
+		}
+
+		if (thumbnailFile.value) {
+			const formData = new FormData();
+			const file = Array.isArray(thumbnailFile.value) ? thumbnailFile.value[0] : thumbnailFile.value;
+			formData.append('thumbnail', file);
+
+			await ky.post(`videos/id/${videoId}/thumbnail`, {
+				body: formData,
+			});
+		}
+
+		playlistData.value = await ky.get(`playlists/id/${id}`).json();
+
+		editVideoDialog.value = false;
+		snackbar.value = true;
+		snackbarText.value = 'Successfully edited video.';
+
+	} catch (error) {
+		let msg = error.message;
+		try { msg = await error.response.text(); } catch(e){}
+		snackbar.value = true;
+		snackbarText.value = `Error editing video: ${msg}`;
+	} finally {
+		isLoading.value = false;
+	}
 };
 
 const addVideoDialog = ref(false);
@@ -564,6 +669,9 @@ const addNewVideoToPlaylist = async () => {
 
 onMounted(async () => {
 	playlistData.value = await ky.get(`playlists/id/${id}`).json();
+	try {
+		defaultGame.value = await ky.get('games/id/499973').json();
+	} catch {}
 });
 
 const deletePlaylist = async () => {
@@ -618,6 +726,9 @@ const editPos = async () => {
 <style scoped>
 .cursor-grab {
 	cursor: grab;
+}
+.cursor-grab:active {
+	cursor: grabbing;
 }
 .draggable-item {
 	transition: all 0.2s ease-in-out;
