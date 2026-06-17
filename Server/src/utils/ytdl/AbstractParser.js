@@ -1,21 +1,26 @@
-import { addFormatMeta } from '@distube/ytdl-core/lib/format-utils.js';
-
 export default class AbstractParser {
-	mergeFormats (formats) {
+	mergeFormats(formats) {
 		const audioFormats = [];
 		const videoFormats = [];
 
 		for (const format of formats) {
-			const metaFormat = addFormatMeta(format);
+			// Manually determine if the format has audio/video based on mimeType and properties 
+			const mimeType = format.mimeType || '';
+			const hasAudio = mimeType.startsWith('audio') || !!format.audioBitrate || !!format.audioChannels;
+			const hasVideo = mimeType.startsWith('video') || !!format.width || !!format.height;
 
-			if (metaFormat.hasAudio && !metaFormat.hasVideo) {
+			if (hasAudio && !hasVideo) {
 				audioFormats.push({
-					...metaFormat,
+					...format,
+					hasAudio,
+					hasVideo
 				});
 			}
-			else if (metaFormat.hasVideo && !metaFormat.hasAudio) {
+			else if (hasVideo && !hasAudio) {
 				videoFormats.push({
-					...metaFormat,
+					...format,
+					hasAudio,
+					hasVideo
 				});
 			}
 		}
@@ -26,8 +31,8 @@ export default class AbstractParser {
 		};
 	}
 
-	// eslint-disable-next-line no-unused-vars
-	async getVideoAndAudioStreams (youtubeID) {
+	// eslint-disable-next-line no-unused-vars 
+	async getVideoAndAudioStreams(youtubeID) {
 		return {
 			audioFormats: [],
 			videoFormats: [],
