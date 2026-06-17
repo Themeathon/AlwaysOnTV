@@ -178,13 +178,21 @@ const playVideo = async () => {
 
 		} else if (currentVideo.value.source_type === 'youtube' && currentVideo.value.id) {
 			// console.log('PlayVideo: Detected YouTube source.');
-			isPlayingLocal.value = false;
+			
+			// 1. Force plyr local media engine mode
+			isPlayingLocal.value = true;
 			videoElement.removeAttribute('src');
 			videoElement.load();
 
-			const mpdUrl = `${API_URL}youtube/get-mpd?videoId=${currentVideo.value.id}&videoQuality=${currentVideo.value.video_quality}`;
-			// console.log('PlayVideo: Initializing Dash.js with MPD:', mpdUrl);
-			await setupDashPlayer(videoElement, mpdUrl);
+			// 2. Point the media source directly to your built-in video proxy stream endpoint
+			// This bypasses dash.js manifests and streams SABR frames smoothly via your backend proxy router
+			const proxiedVideoUrl = `${API_URL}api/youtube/${currentVideo.value.id}/video`;
+			
+			// console.log('PlayVideo: Initializing direct video proxy stream:', proxiedVideoUrl);
+			videoElement.src = proxiedVideoUrl;
+			
+			// 3. Initialize through Plyr local engine
+			setupPlyrForLocal(videoElement);
 
 		} else {
 			// console.error('PlayVideo: Unknown or invalid video source type:', currentVideo.value);
@@ -404,7 +412,10 @@ const setupDashPlayer = async (videoElement, mpdUrl) => {
 			dashjsPlayer.value.on(MediaPlayer.events.ERROR, (e) => {
 				// console.error('Dash.js Error:', e);
 				videoLoading.value = false;
-				if (e.error?.code && e.error.code !== MediaPlayer.dependencies.ErrorHandler.prototype.TIME_SYNC_FAILED_ERROR_CODE) {
+
+				const timeSyncCode = MediaPlayer?.dependencies?.ErrorHandler?.prototype?.TIME_SYNC_FAILED_ERROR_CODE;
+
+				if (e.error?.code && e.error.code !== timeSyncCode) {
 					fetchVideo(true);
 				}
 				reject(e);

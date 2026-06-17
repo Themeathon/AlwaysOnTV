@@ -25,6 +25,11 @@ async function setupKoa () {
 		}
 		catch (err) {
 			ctx.app.emit('error', err, ctx);
+			ctx.status = err.status || err.statusCode || 500;
+			ctx.body = {
+				status: 'error',
+				message: err.message || 'Internal Server Error'
+			};
 		}
 	});
 
@@ -38,6 +43,10 @@ async function setupKoa () {
 		pino.error(err);
 	});
 
+	app.use(cors({
+		origin: '*',
+		maxAge: 1728000,
+	}));
 	app.use(responseTime({ hrtime: true }));
 	app.use(koaBody({
 		multipart: true,
@@ -45,10 +54,6 @@ async function setupKoa () {
 	}));
 	app.use(conditional());
 	app.use(etag());
-	app.use(cors({
-		origin: '*',
-		maxAge: 1728000,
-	}));
 	app.use(json());
 
 	app.use(mount(serve('./public')));

@@ -38,29 +38,24 @@ class GetProxiedStreamType extends AbstractEndpoint {
 		const { videoId, streamType } = ctx.params;
 		const { videoQuality } = ctx;
 
-		const { video, audio, error } = await YTDL.getBestVideoAndAudio(videoId, videoQuality);
+		try {
+			const { video, audio, error } = await YTDL.getBestVideoAndAudio(videoId, videoQuality);
 
-		if (error === 'NO_VIDEO_OR_AUDIO' || !video || !audio) {
-			pino.error('Error in GetProxiedStreamType.getProxiedMPDValue');
-			pino.error('No video or audio, retrying...');
+			if (error || !video || !audio) {
+				ctx.status = 404;
+				ctx.body = { error: 'Not Found', message: 'Stream not available' };
+				return;
+			}
 
-			await sleep(1000);
-
-			return this.getProxiedMPDValue(ctx, next);
+			const targetUrl = streamType === 'video' ? video.url : audio.url;
+			
+			// FIX: Redirect the browser directly to YouTube. 
+			// Do NOT use Utils.proxy() here.
+			ctx.redirect(targetUrl);
+		} catch (e) {
+			ctx.status = 500;
+			ctx.body = { error: e.message };
 		}
-
-		switch (streamType) {
-		case 'video': {
-			ctx.redirect(Utils.proxy(video.url));
-			return next();
-		}
-		case 'audio': {
-			ctx.redirect(Utils.proxy(audio.url));
-			return next();
-		}
-		}
-
-		return next();
 	}
 }
 

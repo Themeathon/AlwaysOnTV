@@ -7,7 +7,7 @@ export let isLoading = ref(false);
 
 export const API_URL = import.meta.env.VITE_API_URL || '/';
 
-function addAuthorization (request) {
+function addAuthorization ({ request }) {
 	const { cookies } = useCookies();
 
 	if (!cookies.isKey('password')) return;
@@ -20,22 +20,31 @@ export function getMPDForVideo (video) {
 }
 
 const api = ky.create({
-	prefixUrl: `${API_URL}api`,
+	prefix: `${API_URL}api`,
 	hooks: {
 		beforeRequest: [
-			() => isLoading.value = true,
+			() => isLoading.value = false,
 			addAuthorization,
 		],
 		afterResponse: [
-			async (_request, _options, response) => {
-				isLoading.value = false;
+			async ({ response }) => {
+				const contentType = response.headers.get('content-type');
+				if (!contentType || !contentType.includes('application/json')) {
+					return response;
+				}
 
-				const { data, message } = await response.json();
+				const resClone = response.clone();
+				const { data, message } = await resClone.json();
 
-				const body = typeof data === 'object' ? JSON.stringify(data) : message;
+				if (!response.ok) {
+					throw new Error(message || `HTTP Error ${response.status}`);
+				}
+
+				const body = typeof data === 'object' ? JSON.stringify(data) : (message || '');
 
 				return new Response(body, {
 					status: response.status,
+					headers: response.headers
 				});
 			},
 		],
@@ -43,19 +52,30 @@ const api = ky.create({
 });
 
 export const auth = ky.create({
-	prefixUrl: `${API_URL}auth`,
+	prefix: `${API_URL}auth`,
 	hooks: {
 		beforeRequest: [
 			addAuthorization,
 		],
 		afterResponse: [
-			async (_request, _options, response) => {
-				const { data, message } = await response.json();
+			async ({ response }) => {
+				const contentType = response.headers.get('content-type');
+				if (!contentType || !contentType.includes('application/json')) {
+					return response;
+				}
 
-				const body = typeof data === 'object' ? JSON.stringify(data) : message;
+				const resClone = response.clone();
+				const { data, message } = await resClone.json();
+
+				if (!response.ok) {
+					throw new Error(message || `HTTP Error ${response.status}`);
+				}
+
+				const body = typeof data === 'object' ? JSON.stringify(data) : (message || '');
 
 				return new Response(body, {
 					status: response.status,
+					headers: response.headers
 				});
 			},
 		],
@@ -63,19 +83,30 @@ export const auth = ky.create({
 });
 
 export const queue = ky.create({
-	prefixUrl: `${API_URL}api/queue`,
+	prefix: `${API_URL}api/queue`,
 	hooks: {
 		beforeRequest: [
 			addAuthorization,
 		],
 		afterResponse: [
-			async (_request, _options, response) => {
-				const { data, message } = await response.json();
+			async ({ response }) => {
+				const contentType = response.headers.get('content-type');
+				if (!contentType || !contentType.includes('application/json')) {
+					return response;
+				}
 
-				const body = typeof data === 'object' ? JSON.stringify(data) : message;
+				const resClone = response.clone();
+				const { data, message } = await resClone.json();
+
+				if (!response.ok) {
+					throw new Error(message || `HTTP Error ${response.status}`);
+				}
+
+				const body = typeof data === 'object' ? JSON.stringify(data) : (message || '');
 
 				return new Response(body, {
 					status: response.status,
+					headers: response.headers
 				});
 			},
 		],
