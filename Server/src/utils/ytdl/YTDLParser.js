@@ -1,40 +1,57 @@
-import ytdl from '@distube/ytdl-core';
+import { Innertube, UniversalCache } from 'youtubei.js';
 import AbstractParser from '~/utils/ytdl/AbstractParser.js';
-import YTDL from '~/utils/ytdl/index.js';
+
+let ytClient;
 
 export default class YTDLParser extends AbstractParser {
-	async getVideoAndAudioStreams (youtubeID) {
-		const info = await YTDL.getVideoInfo(youtubeID);
-
-		if (info.videoDetails.age_restricted) {
-			return {
-				error: 'age_restricted',
-			};
+	async init() {
+		if (!ytClient) {
+			ytClient = await Innertube.create({ cache: new UniversalCache(false) });
 		}
+	}
 
-		const audioFormats = ytdl.filterFormats(info.formats, format => {
-			if (!format.hasAudio) return false;
-			if (format.hasVideo) return false;
-			if (!format.initRange || !format.indexRange) return false;
+	async getVideoAndAudioStreams(youtubeID) {
+		await this.init();
 
-			return format.audioQuality === 'AUDIO_QUALITY_MEDIUM';
-		});
+		try {
+			// Fetch the video data using youtubei.js 
+			const info = await ytClient.getBasicInfo(youtubeID);
 
-		const videoFormats = ytdl.filterFormats(info.formats, format => {
-			if (!format.hasVideo) return false;
-			if (format.hasAudio) return false;
-			if (!format.initRange || !format.indexRange) return false;
+			if (info.playability_status?.status === 'LOGIN_REQUIRED' || info.basic_info.is_unplayable) {
+				return { error: 'age_restricted' };
+			}
 
-			// 360 degree check, somehow not fully supported with AVMerge
-			if (format.qualityLabel.endsWith('s')) return false;
+			const formats = info.streaming_data?.adaptive_formats || [];
 
-			return true;
-		});
+			// Map LuanRT formats to what your DASH generator expects 
+			const audioFormats = formats.filter(f => f.has_audio && !f.has_video).map(f => ({
+				url: f.url || f.decipher(ytClient.session.player),
+				audioBitrate: f.bitrate,
+				mimeType: f.mime_type,
+				initRange: f.init_range,
+				indexRange: f.index_range,
+				hasAudio: true,
+				hasVideo: false
+			}));
 
-		return {
-			audioFormats,
-			videoFormats,
-			duration: info.videoDetails.lengthSeconds,
-		};
+			const videoFormats = formats.filter(f => f.has_video && !f.has_audio).map(f => ({
+				url: f.url || f.decipher(ytClient.session.player),
+				qualityLabel: f.quality_label || `${f.height}p`,
+				height: f.height,
+				mimeType: f.mime_type,
+				initRange: f.init_range,
+				indexRange: f.index_range,
+				hasVideo: true,
+				hasAudio: false
+			}));
+
+			return {
+				audioFormats,
+				videoFormats,
+				duration: info.basic_info.duration
+			};
+		} catch (error) {
+			return { error: error.message };
+		}
 	}
 }
