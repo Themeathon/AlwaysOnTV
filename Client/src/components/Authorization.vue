@@ -81,7 +81,13 @@ const tryAuth = async () => {
 		}
 	}
 	catch (error) {
-		const message = error.response.text();
+		let message = 'A network error occurred. Check the backend console.';
+		
+		if (error.response) {
+			message = await error.response.text();
+		} else if (error.message) {
+			message = error.message;
+		}
 
 		validPassword.value = message;
 

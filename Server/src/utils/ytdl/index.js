@@ -17,7 +17,6 @@ export default class YTDL {
 		this.parser = this.useYTDL ? new YTDLParser() : new InnertubeParser();
 	}
 
-	// NEW: Utility to extract ID from full URLs 
 	static extractID(urlOrId) {
 		if (!urlOrId) return urlOrId;
 		if (/^[a-zA-Z0-9_-]{11}$/.test(urlOrId)) return urlOrId;
@@ -38,17 +37,21 @@ export default class YTDL {
 			return this.info_cache.get(id);
 
 		await this.initYT();
+		
+		// FIX: Swapped getInfo out for getBasicInfo to ignore the broken watch page layout scraper
 		const info = await ytClient.getBasicInfo(id);
 
-		// Mock the ytdl-core data structure 
+		const basicInfo = info.basic_info || info.basicInfo || {};
+		const playStatus = info.playability_status || info.playabilityStatus || {};
+		const thumbnails = basicInfo.thumbnail || basicInfo.thumbnails || [];
+
 		const mappedInfo = {
 			videoDetails: {
-				videoId: info.basic_info.id,
-				title: info.basic_info.title,
-				// Clone array to prevent reverse() from mutating the original cache reference 
-				thumbnails: [...info.basic_info.thumbnail],
-				lengthSeconds: info.basic_info.duration,
-				age_restricted: info.playability_status?.status === 'LOGIN_REQUIRED' || info.basic_info.is_unplayable
+				videoId: basicInfo.id,
+				title: basicInfo.title,
+				thumbnails: [...thumbnails],
+				lengthSeconds: basicInfo.duration,
+				age_restricted: playStatus.status === 'LOGIN_REQUIRED' || basicInfo.is_unplayable || basicInfo.isUnplayable
 			}
 		};
 
@@ -98,7 +101,6 @@ export default class YTDL {
 		if (this.stream_cache.has(id) && !force)
 			return this.stream_cache.get(id);
 
-		// Safely pass the pure ID to our Parser 
 		const { error, audioFormats, videoFormats, duration } = await this.parser.getVideoAndAudioStreams(id);
 		if (error) {
 			throw error;
@@ -125,12 +127,10 @@ export default class YTDL {
 			};
 		}
 
-		// Choose best video under the quality limit 
 		const bestVideo = videoFormats
 			.filter(format => format.height <= videoQuality && !format.qualityLabel?.endsWith('s'))
 			.sort((a, b) => b.height - a.height)[0] || videoFormats[0];
 
-		// Choose the highest bitrate audio 
 		const bestAudio = audioFormats
 			.sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0))[0] || audioFormats[0];
 
@@ -143,19 +143,49 @@ export default class YTDL {
 
 	static async getDashMPD(youtubeID, videoQuality = 1080) {
 		const id = this.extractID(youtubeID);
-		const { video, audio, duration, error } = await this.getBestVideoAndAudio(id, videoQuality);
+		
+		try {
+			const { video, audio, duration, error } = await this.getBestVideoAndAudio(id, videoQuality);
 
-		if (error === 'NO_VIDEO_OR_AUDIO') {
-			return {
-				error,
-			};
+			if (error === 'NO_VIDEO_OR_AUDIO' || !video || !audio) {
+				return await this.getProgressiveStreamFallback(id);
+			}
+
+			const api_url = ServerConfig.api_url;
+			video.url = `${api_url}/youtube/${id}/video?videoQuality=${videoQuality}`;
+			audio.url = `${api_url}/youtube/${id}/audio?videoQuality=${videoQuality}`;
+
+			return ytDashManifestGenerator.generate_dash_file_from_formats([video, audio], duration);
+		} catch (e) {
+			return await this.getProgressiveStreamFallback(id);
 		}
+	}
 
-		const api_url = ServerConfig.api_url;
-
-		video.url = `${api_url}/youtube/${id}/video?videoQuality=${videoQuality}`;
-		audio.url = `${api_url}/youtube/${id}/audio?videoQuality=${videoQuality}`;
-
-		return ytDashManifestGenerator.generate_dash_file_from_formats([video, audio], duration);
+	static async getProgressiveStreamFallback(id) {
+		try {
+			await this.initYT();
+			// FIX: Swapped getInfo for getBasicInfo here to guard the progressive fallback logic
+			const info = await ytClient.getBasicInfo(id);
+			
+			let formats = info.formats || [];
+			if (!formats.length) {
+				formats = info.streaming_data?.formats || info.streaming_data?.progressiveFormats || [];
+			}
+			
+			const format = formats.sort((a, b) => {
+				const heightB = b.height || b.raw_data?.height || 0;
+				const heightA = a.height || a.raw_data?.height || 0;
+				return heightB - heightA;
+			})[0];
+			
+			let url = format?.url;
+			if (!url && typeof format?.decipher === 'function') {
+				url = await format.decipher(ytClient.session.player);
+			}
+			if (url) {
+				return { directUrl: url };
+			}
+		} catch (err) {}
+		return { error: 'NO_VIDEO_OR_AUDIO' };
 	}
 }
