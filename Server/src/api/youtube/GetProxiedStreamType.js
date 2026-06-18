@@ -49,9 +49,10 @@ class GetProxiedStreamType extends AbstractEndpoint {
 
 			const targetUrl = streamType === 'video' ? video.url : audio.url;
 			
-			// FIX: Redirect the browser directly to YouTube. 
-			// Do NOT use Utils.proxy() here.
-			ctx.redirect(targetUrl);
+			// Return the URL as JSON so the frontend can read it safely
+			ctx.status = 200;
+			ctx.body = { url: targetUrl };
+
 		} catch (e) {
 			ctx.status = 500;
 			ctx.body = { error: e.message };
