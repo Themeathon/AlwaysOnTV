@@ -177,25 +177,31 @@ const playVideo = async () => {
 			setupPlyrForLocal(videoElement);
 
 		} else if (currentVideo.value.source_type === 'youtube' && currentVideo.value.id) {
-			// console.log('PlayVideo: Detected YouTube source.');
+			// console.log('PlayVideo: Detected YouTube source. Using Plyr Native Provider.');
 			
-			// 1. Force plyr local media engine mode
-			isPlayingLocal.value = true;
+			// 1. Keep this true so your existing Plyr event listeners (sync, timeupdate, etc.) trigger properly
+			isPlayingLocal.value = true; 
+			
+			// 2. Clear any existing local source to prevent conflicts
 			videoElement.removeAttribute('src');
 			videoElement.load();
 
-			// 2. Point the media source directly to your built-in video proxy stream endpoint
-			// This bypasses dash.js manifests and streams SABR frames smoothly via your backend proxy router
-			const proxiedVideoUrl = `${API_URL}api/youtube/${currentVideo.value.id}/video`;
-			
-			// console.log('PlayVideo: Initializing direct video proxy stream:', proxiedVideoUrl);
-			videoElement.src = proxiedVideoUrl;
-			
-			// 3. Initialize through Plyr local engine
+			// 3. Initialize Plyr just like you do for local files
 			setupPlyrForLocal(videoElement);
 
+			// 4. Programmatically set the source to YouTube. 
+			// Plyr automatically replaces the video tag with a YouTube iframe and binds the events!
+			plyrPlayer.value.source = {
+				type: 'video',
+				sources: [
+					{
+						src: currentVideo.value.id,
+						provider: 'youtube',
+					},
+				],
+			};
+
 		} else {
-			// console.error('PlayVideo: Unknown or invalid video source type:', currentVideo.value);
 			videoLoading.value = false;
 			fetchVideo(true);
 		}
