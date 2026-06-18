@@ -177,33 +177,26 @@ const playVideo = async () => {
 			setupPlyrForLocal(videoElement);
 
 		} else if (currentVideo.value.source_type === 'youtube' && currentVideo.value.id) {
-			// console.log('PlayVideo: Detected YouTube source. Using Plyr Native Provider.');
-			
-			// 1. Keep this true so your existing Plyr event listeners (sync, timeupdate, etc.) trigger properly
-			isPlayingLocal.value = true; 
-			
-			// 2. Clear any existing local source to prevent conflicts
+			isPlayingLocal.value = true;
 			videoElement.removeAttribute('src');
 			videoElement.load();
 
-			// 3. Initialize Plyr just like you do for local files
-			setupPlyrForLocal(videoElement);
-
-			// 4. Programmatically set the source to YouTube. 
-			// Plyr automatically replaces the video tag with a YouTube iframe and binds the events!
-			plyrPlayer.value.source = {
-				type: 'video',
-				sources: [
-					{
-						src: currentVideo.value.id,
-						provider: 'youtube',
-					},
-				],
-			};
-
-		} else {
-			videoLoading.value = false;
-			fetchVideo(true);
+			const api_url = import.meta.env.VITE_API_URL || 'http://localhost:8085';
+			
+			try {
+				const response = await fetch(`${api_url}/api/youtube/${currentVideo.value.id}/video`);
+				const data = await response.json();
+				
+				if (data.url) {
+					videoElement.src = data.url;
+					setupPlyrForLocal(videoElement);
+				} else {
+					throw new Error("No URL returned from backend");
+				}
+			} catch (e) {
+				console.error("Failed to fetch or play YouTube stream URL", e);
+				fetchVideo(true);
+			}
 		}
 
 	} catch (error) {
@@ -273,7 +266,7 @@ const setupPlyrForLocal = (videoElement) => {
 		// console.error('Plyr Error (Local):', event.detail?.error || event.detail);
 		if (event.detail?.plyr?.media?.error) {
 			// console.warn('MediaError detected, fetching next video.');
-			fetchVideo(true);
+			//fetchVideo(true);
 		}
 	});
 
@@ -422,7 +415,7 @@ const setupDashPlayer = async (videoElement, mpdUrl) => {
 				const timeSyncCode = MediaPlayer?.dependencies?.ErrorHandler?.prototype?.TIME_SYNC_FAILED_ERROR_CODE;
 
 				if (e.error?.code && e.error.code !== timeSyncCode) {
-					fetchVideo(true);
+					//fetchVideo(true);
 				}
 				reject(e);
 			});

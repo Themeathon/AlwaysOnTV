@@ -7,14 +7,16 @@ import InnertubeParser from '~/utils/ytdl/InnertubeParser.js';
 import YTDLParser from '~/utils/ytdl/YTDLParser.js';
 import { Innertube, UniversalCache } from 'youtubei.js';
 
+import YTDlpParser from '~/utils/ytdl/YTDlpParser.js';
+
 let ytClient;
 
 export default class YTDL {
 	static {
 		this.info_cache = new NodeCache({ stdTTL: 60 * 60 * 3 }); // 3 hours 
 		this.stream_cache = new NodeCache({ stdTTL: 60 * 60 * 3 }); // 3 hours 
-		this.useYTDL = true;
-		this.parser = this.useYTDL ? new YTDLParser() : new InnertubeParser();
+
+		this.parser = new YTDlpParser();
 	}
 
 	static extractID(urlOrId) {
