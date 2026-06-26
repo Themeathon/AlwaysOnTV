@@ -1,9 +1,8 @@
 import Joi from 'joi';
-
 import AbstractEndpoint from '~/api/AbstractEndpoint.js';
 import Config from '~/utils/Config.js';
 import pino from '~/utils/Pino.js';
-import YTDL from '~/utils/ytdl/index.js';
+import DownloadManager from '~/utils/ytdl/DownloadManager.js'; 
 
 class GetMPDFromYouTube extends AbstractEndpoint {
 	setup () {
@@ -22,9 +21,7 @@ class GetMPDFromYouTube extends AbstractEndpoint {
 
 	async getVideoQuality (ctx, next) {
 		const { videoQuality } = ctx.request.query;
-
 		ctx.videoQuality = videoQuality || Config.maxVideoQuality;
-
 		return next();
 	}
 
@@ -33,12 +30,28 @@ class GetMPDFromYouTube extends AbstractEndpoint {
 			const { videoId } = ctx.request.query;
 			const { videoQuality } = ctx;
 
-			const data = await YTDL.getDashMPD(videoId, videoQuality);
-			if (data.error) {
-				return super.error(ctx, data.error);
+			ctx.type = 'application/json';
+
+			const isDownloaded = DownloadManager.isDownloaded(videoId);
+			const isActivelyDownloading = DownloadManager.activeDownloads.has(videoId);
+			const resolvedPath = DownloadManager.getFilePath(videoId);
+
+			// pino.info(`[GetMPDFromYouTube] Diagnostics for ID ${videoId} -> isDownloaded: ${isDownloaded}, isActivelyDownloading: ${isActivelyDownloading}, resolvedPath: "${resolvedPath}"`);
+
+			if (isDownloaded && !isActivelyDownloading) {
+				pino.info(`[GetMPDFromYouTube] Routing decision: Serving cached local file stream.`);
+				ctx.body = {
+					status: 'cached',
+					directUrl: `${Config.ServerConfig?.api_url || ''}/api/local-media/local/${videoId}` 
+				};
+				return next();
 			}
 
-			ctx.body = data;
+			pino.info(`[GetMPDFromYouTube] Routing decision: Serving live stream proxy fallback.`);
+			ctx.body = {
+				status: 'live_fallback',
+				directUrl: `${Config.ServerConfig?.api_url || ''}/api/youtube/${videoId}/video?videoQuality=${videoQuality}`
+			};
 			return next();
 		}
 		catch (error) {

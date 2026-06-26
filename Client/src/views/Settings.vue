@@ -38,6 +38,14 @@
 							persistent-hint
 							hint="Will be applied to the next video"
 							label="Max. Video Quality"
+							class="mb-2"
+						/>
+						<v-select
+							v-model="prefetchQueueAmount"
+							:items="prefetchOptions"
+							persistent-hint
+							hint="How many upcoming videos to pre-download in advance"
+							label="Queue Caching Look-Ahead Amount"
 						/>
 					</v-card-text>
 				</v-card>
@@ -201,6 +209,7 @@ const isAuthenticating = ref(false);
 const useRandomPlaylist = ref(false);
 const useEntireRandomPlaylist = ref(false);
 const selectedVideoQuality = ref(null);
+const prefetchQueueAmount = ref(1);
 const twitchEnabled = ref(false);
 const streamingTitle = ref('');
 const clientID = ref('');
@@ -220,6 +229,8 @@ const videoQualityOptions = [
 	{ quality: 2160, name: '2160p' },
 ];
 
+const prefetchOptions = Array.from({ length: 10 }, (v, i) => i + 1);
+
 const canAuthenticate = computed(() => !!clientID.value && !!clientSecret.value);
 
 const canSave = computed(() => {
@@ -233,6 +244,7 @@ const canSave = computed(() => {
       useRandomPlaylist.value !== settingsData.value?.use_random_playlist ||
       useEntireRandomPlaylist.value !== settingsData.value?.use_entire_random_playlist ||
       selectedVideoQuality.value !== settingsData.value?.max_video_quality ||
+      prefetchQueueAmount.value !== settingsData.value?.prefetch_queue_amount ||
       !_.isEqual(currentPaths.sort(), originalPaths.sort());
 });
 
@@ -255,6 +267,7 @@ const getSettings = async () => {
 		useRandomPlaylist.value = settingsData.value.use_random_playlist ?? true;
 		useEntireRandomPlaylist.value = settingsData.value.use_entire_random_playlist ?? false;
 		selectedVideoQuality.value = videoQualityOptions.find(q => q.quality === settingsData.value.max_video_quality)?.quality || 1080;
+		prefetchQueueAmount.value = settingsData.value.prefetch_queue_amount ?? 1;
 
 		const loadedPaths = settingsData.value.local_media?.base_paths || [];
 		localBasePaths.value = loadedPaths.length > 0 ? [...loadedPaths] : [''];
@@ -311,7 +324,6 @@ const openAuth = async () => {
 
 		window.removeEventListener('message', listener);
 
-		// -- Data
 		const { data } = event;
 		if (data.status === 200) {
 			snackbar.value = true;
@@ -341,6 +353,7 @@ const saveSettings = async () => {
 				use_random_playlist: useRandomPlaylist.value,
 				use_entire_random_playlist: useEntireRandomPlaylist.value,
 				max_video_quality: selectedVideoQuality.value,
+				prefetch_queue_amount: prefetchQueueAmount.value,
 				local_base_paths: pathsToSave,
 			},
 		}).json();

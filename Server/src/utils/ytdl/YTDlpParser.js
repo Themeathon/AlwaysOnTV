@@ -21,7 +21,7 @@ export default class YTDlpParser extends AbstractParser {
 			}
 			const cookieFlag = hasCookies ? `--cookies "${cookiesPath}"` : '';
 
-			const command = `yt-dlp -J -f "best[ext=mp4][protocol^=http]" ${cookieFlag} --no-warnings ${url}`;
+			const command = `yt-dlp -J -f "best[ext=mp4][height<=720]/best" ${cookieFlag} --no-warnings "${url}"`;
 
 			const { stdout } = await execPromise(command, { maxBuffer: 1024 * 1024 * 10 });
 			

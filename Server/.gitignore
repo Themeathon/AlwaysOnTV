@@ -147,3 +147,5 @@ data.db
 config.json
 queue.json
 history.json
+cache_downloads/
+cookies.txt
