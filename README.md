@@ -49,6 +49,17 @@ To access the Always On TV web interface, follow these steps:
 1. Ensure Always On TV is running. (`npm start`).
 2. Open your web browser and navigate to `localhost:8085` (or the port set in the `config.json` file).
 
+### Use your own Cookies (Optional)
+
+To prevent YouTube from blocking your server background tasks or flagging downloader components as a bot, you can optionally provide authentication cookies. This ensures that the local downloading stream pipeline handles content lookups flawlessly.
+
+1. Install a browser extension that allows exporting cookies in Netscape format (e.g., "Get COOKIES.txt").
+2. Log into your YouTube account in that browser and export your active cookies.
+3. Name the exported file exactly as `cookies.txt`.
+4. Place this file directly inside your server component directory at: `/Server/cookies.txt`.
+
+The background manager will automatically verify the presence of the file on its next look-ahead pass and apply it directly to `yt-dlp` execution arguments.
+
 ### Twitch Integration
 
 To enable Twitch integration, follow these steps:

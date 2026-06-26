@@ -17,6 +17,7 @@ class UpdateSettings extends AbstractEndpoint {
 				use_random_playlist: Joi.bool(),
 				use_entire_random_playlist: Joi.bool(),
 				max_video_quality: Joi.number().allow(360, 480, 720, 1080, 1440, 2160),
+				prefetch_queue_amount: Joi.number().min(1).max(10),
 				local_base_paths: Joi.array().items(Joi.string().allow('')).optional(),
 			}).or(
 				'twitch_enabled',
@@ -26,6 +27,7 @@ class UpdateSettings extends AbstractEndpoint {
 				'use_random_playlist',
 				'use_entire_random_playlist',
 				'max_video_quality',
+				'prefetch_queue_amount',
 				'local_base_paths',
 			),
 		});
@@ -41,6 +43,7 @@ class UpdateSettings extends AbstractEndpoint {
 				use_random_playlist,
 				use_entire_random_playlist,
 				max_video_quality,
+				prefetch_queue_amount,
 				local_base_paths,
 			} = ctx.request.body;
 
@@ -52,6 +55,7 @@ class UpdateSettings extends AbstractEndpoint {
 			Config.useRandomPlaylist = use_random_playlist;
 			Config.useEntireRandomPlaylist = use_entire_random_playlist;
 			Config.maxVideoQuality = max_video_quality;
+			Config.prefetchQueueAmount = prefetch_queue_amount;
 			LocalMediaConfig.localBasePaths = local_base_paths;
 
 			return super.success(ctx, next, {
@@ -63,6 +67,7 @@ class UpdateSettings extends AbstractEndpoint {
 					use_random_playlist,
 					use_entire_random_playlist,
 					max_video_quality,
+					prefetch_queue_amount,
 					local_base_paths,
 				},
 			});

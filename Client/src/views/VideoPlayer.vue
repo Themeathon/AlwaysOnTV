@@ -144,16 +144,12 @@ const fetchVideo = async (nextVideo = false) => {
 const playVideo = async () => {
 	const videoElement = document.getElementById('videoPlayer');
 	if (!videoElement) {
-		// console.error('Video element not found!');
 		videoLoading.value = false;
 		return;
 	}
 
 	try {
-		// console.log('PlayVideo Check:', currentVideo.value);
-
 		if (currentVideo.value.source_type === 'local' && currentVideo.value.stream_url) {
-			// console.log('PlayVideo: Detected local source.');
 			isPlayingLocal.value = true;
 
 			let streamUrl = '';
@@ -162,47 +158,54 @@ const playVideo = async () => {
 			if (viteApiUrl && viteApiUrl.startsWith('http')) {
 				try {
 					const apiUrlObject = new URL(viteApiUrl);
-					const baseUrl = apiUrlObject.origin;
-					streamUrl = `${baseUrl}${streamPath}`;
+					streamUrl = `${apiUrlObject.origin}${streamPath}`;
 				} catch(e) {
-					// console.error('Error creating URL object from VITE_API_URL, falling back to relative path:', e);
 					streamUrl = streamPath;
 				}
 			} else {
 				streamUrl = streamPath;
 			}
 
-			// console.log('PlayVideo: Setting local source:', streamUrl);
 			videoElement.src = streamUrl;
 			setupPlyrForLocal(videoElement);
 
-		} else if (currentVideo.value.source_type === 'youtube' && currentVideo.value.id) {
-			isPlayingLocal.value = true;
-			videoElement.removeAttribute('src');
-			videoElement.load();
+        } else if (currentVideo.value.source_type === 'youtube' && currentVideo.value.id) {
+            const api_url = import.meta.env.VITE_API_URL || 'http://localhost:8085';
+            const videoQuality = currentVideo.value.videoQuality || 1080;
 
-			const api_url = import.meta.env.VITE_API_URL || 'http://localhost:8085';
-			
-			try {
-				const response = await fetch(`${api_url}/api/youtube/${currentVideo.value.id}/video`);
-				const data = await response.json();
-				
-				if (data.url) {
-					videoElement.src = data.url;
-					setupPlyrForLocal(videoElement);
-				} else {
-					throw new Error("No URL returned from backend");
-				}
-			} catch (e) {
-				console.error("Failed to fetch or play YouTube stream URL", e);
-				fetchVideo(true);
-			}
-		}
+            videoLoading.value = true;
+
+            try {
+                // Fetch our stream data orchestrator payload
+                const response = await fetch(`${api_url}/api/youtube/get-mpd?videoId=${currentVideo.value.id}&videoQuality=${videoQuality}`);
+                const data = await response.json();
+
+                if (data && data.directUrl) {
+                    console.log(`PlayVideo: Running pipeline [Mode: ${data.status}]. Target source:`, data.directUrl);
+                    
+                    isPlayingLocal.value = true;
+                    videoElement.removeAttribute('src');
+                    videoElement.src = data.directUrl;
+                    
+                    setupPlyrForLocal(videoElement);
+                } else {
+                    throw new Error("Invalid payload format returned from get-mpd route.");
+                }
+
+            } catch (error) {
+                console.error("Failed handling YouTube play path:", error);
+                videoLoading.value = false;
+                fetchVideo(true);
+            }
+        }
 
 	} catch (error) {
-		// console.error('Error during playVideo execution:', error);
+		console.error('Error during playVideo execution:', error);
 		videoLoading.value = false;
-		fetchVideo(true);
+		
+		setTimeout(() => {
+			fetchVideo(true);
+		}, 5000);
 	}
 };
 

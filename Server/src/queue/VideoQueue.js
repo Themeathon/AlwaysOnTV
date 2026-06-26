@@ -7,6 +7,7 @@ import ytdl from '~/utils/ytdl/index.js';
 import Socket from '~/Socket.js';
 import pino from '~/utils/Pino.js';
 import { fetchPlaylist, formatVideos} from '~/api/queue/AddRandomPlaylistToQueue.js';
+import DownloadManager from '~/utils/ytdl/DownloadManager.js';
 
 class VideoQueue extends AbstractQueue {
 	constructor () {
@@ -73,8 +74,11 @@ class VideoQueue extends AbstractQueue {
 		return RandomPlaylistDatabase.getRandomVideo(amount);
 	}
 
-	// TODO: This can deadlock if only age-restricted videos are in the random playlist
 	async advanceQueue () {
+		const oldVideo = this.getCurrentVideo();
+		const oldVideoId = oldVideo?.id;
+		const oldSourceType = oldVideo?.source_type;
+
 		let nextVideo = await super.getAndAdvance();
 
 		if (!nextVideo) {
@@ -115,9 +119,65 @@ class VideoQueue extends AbstractQueue {
 
 		await this.updateCurrentVideo(nextVideo);
 
+		// Trigger background clean up for the previous video if it was a YouTube stream
+		if (oldVideoId && oldSourceType !== 'local') {
+			DownloadManager.deleteDownloadedVideo(oldVideoId);
+		}
+
+		this.prefetchUpcomingVideos();
+
 		Socket.io.emit('next_video');
 
 		return nextVideo;
+	}
+
+	async prefetchUpcomingVideos () {
+		const prefetchAmount = Config.prefetchQueueAmount || 1;
+		
+		const whiteListedIds = [];
+
+		const currentVideo = this.getCurrentVideo();
+		if (currentVideo && currentVideo.id && currentVideo.source_type !== 'local') {
+			whiteListedIds.push(currentVideo.id);
+			if (!DownloadManager.isDownloaded(currentVideo.id)) {
+				pino.info(`[VideoQueue] Current video ${currentVideo.id} is missing from cache. Starting immediate download.`);
+				await DownloadManager.downloadVideo(currentVideo.id, Config.maxVideoQuality || 1080);
+			}
+		}
+
+		const itemsToPrefetch = this.db.data.items.slice(0, prefetchAmount);
+		
+		for (const item of itemsToPrefetch) {
+			if (item && item.id && item.source_type !== 'local') {
+				whiteListedIds.push(item.id);
+			}
+		}
+
+		DownloadManager.cleanStaleCache(whiteListedIds);
+
+		for (const item of itemsToPrefetch) {
+			if (item && item.id && item.source_type !== 'local') {
+				if (!DownloadManager.isDownloaded(item.id) && !DownloadManager.activeDownloads.has(item.id)) {
+					pino.info(`[VideoQueue] Caching ahead sequentially. Starting track: ${item.id}`);
+					await DownloadManager.downloadVideo(item.id, Config.maxVideoQuality || 1080);
+				}
+			}
+		}
+	}
+
+	async add (elements, skipUpdate = false) {
+		const wasEmpty = !this.hasItems();
+
+		await super.add(elements);
+
+		if (!this.hasCurrentVideo() && wasEmpty && !skipUpdate) {
+			const currentVideo = await this.getAndAdvance();
+			await this.updateCurrentVideo(currentVideo);
+		}
+
+		this.prefetchUpcomingVideos();
+
+		return this.db.data;
 	}
 
 	async isVideoValid (video) {

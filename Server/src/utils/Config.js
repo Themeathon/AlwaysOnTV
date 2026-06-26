@@ -51,9 +51,10 @@ export default class Config {
 			max_video_quality: 1080,
 			use_random_playlist: true,
 			use_entire_random_playlist: false,
+			prefetch_queue_amount: 1,
 			local_media: {
 				base_paths: [
-					'Insert your path here',
+					'',
 				],
 			},
 		};
@@ -122,6 +123,19 @@ export default class Config {
 
 		this.save();
 	}
+
+	// prefetchQueueAmount
+    static get prefetchQueueAmount () {
+        return this.data.prefetch_queue_amount ?? 1;
+    }
+
+    static set prefetchQueueAmount (prefetch_queue_amount) {
+        if (prefetch_queue_amount === undefined) return;
+
+        this.data.prefetch_queue_amount = prefetch_queue_amount;
+
+        this.save();
+    }
 }
 
 export class ServerConfig {

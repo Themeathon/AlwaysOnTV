@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import pino from '~/utils/Pino.js';
 import Joi from 'joi';
 import path from 'node:path';
+import { pipeline } from 'node:stream';
+import DownloadManager from '~/utils/ytdl/DownloadManager.js';
 
 class StreamLocalVideo extends AbstractEndpoint {
 	setup () {
@@ -20,14 +22,19 @@ class StreamLocalVideo extends AbstractEndpoint {
 
 	async streamVideo (ctx, next) {
 		const videoId = ctx.params.id;
+		let filePath = null;
 
 		const video = await VideoDatabase.tryGet({ id: videoId, source_type: 'local' });
 
-		if (!video || !video.file_path) {
-			return super.error(ctx, 'Local video not found', 404);
+		if (video && video.file_path) {
+			filePath = video.file_path;
+		} else if (DownloadManager.isDownloaded(videoId)) {
+			filePath = DownloadManager.getFilePath(videoId); 
 		}
 
-		const filePath = video.file_path;
+		if (!filePath) {
+			return super.error(ctx, 'Video file not found', 404);
+		}
 
 		try {
 			const stats = await fs.promises.stat(filePath);
@@ -62,12 +69,15 @@ class StreamLocalVideo extends AbstractEndpoint {
 				else if (ext === '.mov') ctx.set('Content-Type', 'video/quicktime');
 				else ctx.set('Content-Type', 'application/octet-stream');
 
-				ctx.body = fileStream;
-
-				fileStream.on('error', (err) => {
-					pino.error(`Error reading file stream for ${filePath}: ${err.message}`);
-					ctx.res.end();
+				// This catches client aborts cleanly, skipping the framework's default crash catcher
+				pipeline(fileStream, ctx.res, (err) => {
+					if (err && err.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+						pino.error(`[StreamLocalVideo] Range Pipeline error for ${filePath}: ${err.message}`);
+					}
 				});
+
+				// Tell Koa we are explicitly bypassing manual ctx.body assignments to let pipeline handle it
+				ctx.respond = false;
 
 			} else {
 				ctx.status = 200;
@@ -82,12 +92,14 @@ class StreamLocalVideo extends AbstractEndpoint {
 				else ctx.set('Content-Type', 'application/octet-stream');
 
 				const fileStream = fs.createReadStream(filePath);
-				ctx.body = fileStream;
 
-				fileStream.on('error', (err) => {
-					pino.error(`Error reading file stream for ${filePath}: ${err.message}`);
-					ctx.res.end();
+				pipeline(fileStream, ctx.res, (err) => {
+					if (err && err.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+						pino.error(`[StreamLocalVideo] Full Pipeline error for ${filePath}: ${err.message}`);
+					}
 				});
+
+				ctx.respond = false;
 			}
 
 		} catch (error) {
