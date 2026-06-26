@@ -14,7 +14,7 @@ Always On TV is a powerful tool that allows you to manage YouTube videos and pla
 ## Installation
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (Version 22 or higher recommended)
+- [Node.js](https://nodejs.org/) (Version 26.3 or higher recommended)
 - [NPM](https://www.npmjs.com/) (usually included with Node.js)
 
 ### Quick Start (Automated)
