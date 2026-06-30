@@ -1,12 +1,17 @@
 import fs from 'node:fs';
 import Knex from 'knex';
-import knexfile from '~root/knexfile.js';
 import pino from '~/utils/Pino.js';
 
 let knex;
 
 export async function initializeDatabase () {
-	knex = Knex(knexfile);
+	knex = Knex({
+		client: 'better-sqlite3',
+		connection: {
+			filename: './data.db',
+		},
+		useNullAsDefault: true,
+	});
 	await knex.raw('PRAGMA foreign_keys = ON');
 
 	const files = await fs.promises.readdir('src/db');
