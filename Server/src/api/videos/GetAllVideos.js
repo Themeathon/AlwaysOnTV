@@ -1,6 +1,6 @@
 import Joi from 'joi';
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import VideoDatabase from '#db/VideoDatabase.js';
 
 class GetAllVideos extends AbstractEndpoint {
 	setup () {

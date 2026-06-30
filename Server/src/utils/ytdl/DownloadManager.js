@@ -3,7 +3,7 @@ import util from 'util';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 const execPromise = util.promisify(exec);
 

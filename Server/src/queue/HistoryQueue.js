@@ -1,4 +1,4 @@
-import Socket from '~/Socket.js';
+import Socket from '../Socket.js';
 import AbstractQueue from './AbstractQueue.js';
 
 class HistoryQueue extends AbstractQueue {

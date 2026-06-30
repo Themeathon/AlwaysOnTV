@@ -1,6 +1,6 @@
-import VideoQueue from '~/queue/VideoQueue.js';
+import VideoQueue from '../../queue/VideoQueue.js';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class ClearQueue extends AbstractEndpoint {
 	setup () {

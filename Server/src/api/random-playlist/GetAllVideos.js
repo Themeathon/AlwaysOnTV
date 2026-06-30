@@ -1,6 +1,6 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
-import RandomPlaylistDatabase from '~/db/RandomPlaylistDatabase.js';
+import RandomPlaylistDatabase from '#db/RandomPlaylistDatabase.js';
 
 class GetAllVideos extends AbstractEndpoint {
 	setup () {

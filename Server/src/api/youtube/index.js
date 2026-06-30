@@ -1,9 +1,9 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
-import GetMPDFromYouTube from '~/api/youtube/GetMPDFromYouTube.js';
-import GetPlaylistFromYouTube from '~/api/youtube/GetPlaylistFromYouTube.js';
-import GetProxiedStreamType from '~/api/youtube/GetProxiedStreamType.js';
-import GetVideoFromYouTube from '~/api/youtube/GetVideoFromYouTube.js';
+import AbstractRouter from '../AbstractRouter.js';
+import checkPassword from '../PasswordMiddleware.js';
+import GetMPDFromYouTube from './GetMPDFromYouTube.js';
+import GetPlaylistFromYouTube from './GetPlaylistFromYouTube.js';
+import GetProxiedStreamType from './GetProxiedStreamType.js';
+import GetVideoFromYouTube from './GetVideoFromYouTube.js';
 
 class YouTubeRouter extends AbstractRouter {
 	constructor () {

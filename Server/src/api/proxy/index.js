@@ -1,5 +1,5 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import ProxyRequest from '~/api/proxy/ProxyRequest.js';
+import AbstractRouter from '../AbstractRouter.js';
+import ProxyRequest from './ProxyRequest.js';
 
 class ProxyRouter extends AbstractRouter {
 	constructor() {

@@ -1,4 +1,4 @@
-import VideoDatabase from '~/db/VideoDatabase.js';
+import VideoDatabase from '#db/VideoDatabase.js';
 import AbstractDatabase from './AbstractDatabase.js';
 
 class RandomPlaylistDatabase extends AbstractDatabase {

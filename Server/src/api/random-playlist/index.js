@@ -1,11 +1,11 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
+import AbstractRouter from '../AbstractRouter.js';
 
-import GetAllVideos from '~/api/random-playlist/GetAllVideos.js';
-import GetRandomVideo from '~/api/random-playlist/GetRandomVideo.js';
+import GetAllVideos from './GetAllVideos.js';
+import GetRandomVideo from './GetRandomVideo.js';
 
-import AddVideosToPlaylist from '~/api/random-playlist/AddVideosToPlaylist.js';
-import DeleteVideosFromPlaylist from '~/api/random-playlist/DeleteVideosFromPlaylist.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
+import AddVideosToPlaylist from './AddVideosToPlaylist.js';
+import DeleteVideosFromPlaylist from './DeleteVideosFromPlaylist.js';
+import checkPassword from '../PasswordMiddleware.js';
 
 class RandomPlaylistRouter extends AbstractRouter {
 	constructor () {

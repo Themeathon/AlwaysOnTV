@@ -1,8 +1,8 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
+import AbstractRouter from '../AbstractRouter.js';
+import checkPassword from '../PasswordMiddleware.js';
 
-import GetSettings from '~/api/settings/GetSettings.js';
-import UpdateSettings from '~/api/settings/UpdateSettings.js';
+import GetSettings from './GetSettings.js';
+import UpdateSettings from './UpdateSettings.js';
 
 class SettingsRouter extends AbstractRouter {
 	constructor () {

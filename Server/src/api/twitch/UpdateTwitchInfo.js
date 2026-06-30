@@ -1,7 +1,7 @@
 import Joi from 'joi';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import Twitch from '~/utils/Twitch.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import Twitch from '#utils/Twitch.js';
 
 class UpdateTwitchInfo extends AbstractEndpoint {
 	setup () {

@@ -1,6 +1,5 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import StreamLocalVideo from '~/api/local-media/StreamLocalVideo.js';
-// import checkPassword from '~/api/PasswordMiddleware.js';
+import AbstractRouter from '../AbstractRouter.js';
+import StreamLocalVideo from './StreamLocalVideo.js';
 
 class StreamRouter extends AbstractRouter {
 	constructor () {

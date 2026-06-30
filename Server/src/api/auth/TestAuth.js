@@ -1,5 +1,5 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import Config from '~/utils/Config.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import Config from '#utils/Config.js';
 
 class TestAuth extends AbstractEndpoint {
 	setup () {

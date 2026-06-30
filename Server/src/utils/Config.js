@@ -1,4 +1,4 @@
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 import chokidar from 'chokidar';
 
@@ -63,7 +63,7 @@ export default class Config {
 	static async load () {
 		const data = this.db.read();
 
-		const { default: GrantUrismo } = await import('~/Grant.js');
+		const { default: GrantUrismo } = await import('../Grant.js');
 
 		GrantUrismo.twitchClientID = TwitchConfig.clientID;
 		GrantUrismo.twitchClientSecret = TwitchConfig.clientSecret;
@@ -211,7 +211,7 @@ export class TwitchConfig {
 	}
 
 	static async updateGrantConfig () {
-		const { default: GrantUrismo } = await import('~/Grant.js');
+		const { default: GrantUrismo } = await import('../Grant.js');
 
 		GrantUrismo.twitchClientID = this.clientID;
 		GrantUrismo.twitchClientSecret = this.clientSecret;

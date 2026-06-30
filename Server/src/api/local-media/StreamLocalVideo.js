@@ -1,11 +1,11 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import VideoDatabase from '#db/VideoDatabase.js';
 import fs from 'node:fs';
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 import Joi from 'joi';
 import path from 'node:path';
 import { pipeline } from 'node:stream';
-import DownloadManager from '~/utils/ytdl/DownloadManager.js';
+import DownloadManager from '#utils/ytdl/DownloadManager.js';
 
 class StreamLocalVideo extends AbstractEndpoint {
 	setup () {

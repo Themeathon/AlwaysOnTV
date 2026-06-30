@@ -9,9 +9,9 @@ import serve from 'koa-static';
 
 import session from 'koa-session';
 import mount from 'koa-mount';
-import GrantUrismo from '~/Grant.js';
+import GrantUrismo from './Grant.js';
 
-import Socket from '~/Socket.js';
+import Socket from './Socket.js';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 
@@ -83,9 +83,9 @@ async function setupKoa () {
 	return app;
 }
 
-import setupRouters from '~/api/index.js';
-import pino from '~/utils/Pino.js';
-import { ServerConfig } from '~/utils/Config.js';
+import setupRouters from './api/index.js';
+import pino from '#utils/Pino.js';
+import { ServerConfig } from '#utils/Config.js';
 
 export default async function start () {
 	const app = await setupKoa();

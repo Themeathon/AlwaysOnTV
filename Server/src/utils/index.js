@@ -1,6 +1,6 @@
 import got from 'got';
-import { ServerConfig } from '~/utils/Config.js';
-import pino from '~/utils/Pino.js';
+import { ServerConfig } from '#utils/Config.js';
+import pino from '#utils/Pino.js';
 
 export default class Utils {
 	static proxy (url) {

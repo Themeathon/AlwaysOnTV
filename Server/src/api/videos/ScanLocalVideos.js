@@ -1,12 +1,12 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import Config from '~/utils/Config.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
-import GameDatabase from '~/db/GameDatabase.js';
-import RandomPlaylistDatabase from '~/db/RandomPlaylistDatabase.js';
-import pino from '~/utils/Pino.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import Config from '#utils/Config.js';
+import VideoDatabase from '#db/VideoDatabase.js';
+import GameDatabase from '#db/GameDatabase.js';
+import RandomPlaylistDatabase from '#db/RandomPlaylistDatabase.js';
+import pino from '#utils/Pino.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import Socket from '~/Socket.js';
+import Socket from '../../Socket.js';
 
 //ffmpeg setup
 import ffmpeg from 'fluent-ffmpeg';

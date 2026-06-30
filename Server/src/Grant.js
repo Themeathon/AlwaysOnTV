@@ -1,5 +1,5 @@
 import Grant from 'grant-koa';
-import { ServerConfig } from '~/utils/Config.js';
+import { ServerConfig } from '#utils/Config.js';
 
 // Lordmau5: What should I call the class that holds the Grant related stuff?
 // Jugachi: Gran Turismo.

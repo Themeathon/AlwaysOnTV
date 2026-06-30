@@ -1,7 +1,7 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 import got from 'got';
 
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 const rangePattern = /^bytes=?(\d*)-?(\d*)$/;
 

@@ -1,7 +1,7 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
+import AbstractRouter from '../AbstractRouter.js';
+import checkPassword from '../PasswordMiddleware.js';
 
-import GetHistory from '~/api/history/GetHistory.js';
+import GetHistory from './GetHistory.js';
 
 class HistoryRouter extends AbstractRouter {
 	constructor () {

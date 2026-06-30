@@ -1,4 +1,4 @@
-import Config from '~/utils/Config.js';
+import Config from '#utils/Config.js';
 
 export default async function checkPassword (ctx, next) {
 	if (!Config.password) return next();

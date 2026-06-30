@@ -1,6 +1,6 @@
-import { initializeDatabase } from '~/db/index.js';
-import setupKoa from '~/Koa.js';
-import Config from '~/utils/Config.js';
+import { initializeDatabase } from './src/db/index.js';
+import setupKoa from './src/Koa.js';
+import Config from './src/utils/Config.js';
 
 async function start () {
 	// Initialize config
@@ -11,8 +11,8 @@ async function start () {
 	await setupKoa();
 
 	// Initialize queue and history
-	await import('~/queue/VideoQueue.js');
-	await import('~/queue/HistoryQueue.js');
+	await import('./src/queue/VideoQueue.js');
+	await import('./src/queue/HistoryQueue.js');
 }
 
 start();

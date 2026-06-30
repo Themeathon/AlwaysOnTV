@@ -1,8 +1,8 @@
 import Joi from 'joi';
-import VideoQueue from '~/queue/VideoQueue.js';
-import Config from '~/utils/Config.js';
-import PlaylistDatabase from '~/db/PlaylistDatabase.js';
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import VideoQueue from '../../queue/VideoQueue.js';
+import Config from '#utils/Config.js';
+import PlaylistDatabase from '#db/PlaylistDatabase.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class AddRandomPlaylistToQueueMiddleware extends AbstractEndpoint {
 	setup () {

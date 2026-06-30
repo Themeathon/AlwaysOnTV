@@ -1,8 +1,7 @@
 import Joi from 'joi';
 
-import GameDatabase from '~/db/GameDatabase.js';
-
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import GameDatabase from '#db/GameDatabase.js';
 
 class UpdateGameByID extends AbstractEndpoint {
 	setup () {
