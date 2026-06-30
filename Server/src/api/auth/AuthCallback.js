@@ -1,6 +1,6 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
-import Twitch from '~/utils/Twitch.js';
+import Twitch from '#utils/Twitch.js';
 
 class AuthCallback extends AbstractEndpoint {
 	setup () {

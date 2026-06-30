@@ -1,9 +1,9 @@
 import Joi from 'joi';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import PlaylistDatabase from '~/db/PlaylistDatabase.js';
-import PlaylistVideoDatabase from '~/db/PlaylistVideoDatabase.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import PlaylistDatabase from '#db/PlaylistDatabase.js';
+import PlaylistVideoDatabase from '#db/PlaylistVideoDatabase.js';
+import VideoDatabase from '#db/VideoDatabase.js';
 
 class AddVideoToPlaylist extends AbstractEndpoint {
 	setup () {

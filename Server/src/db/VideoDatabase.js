@@ -1,7 +1,7 @@
 import AbstractDatabase from './AbstractDatabase.js';
-import PlaylistVideoDatabase from '~/db/PlaylistVideoDatabase.js';
-import pino from '~/utils/Pino.js';
-import ytdl from '~/utils/ytdl/index.js';
+import PlaylistVideoDatabase from '#db/PlaylistVideoDatabase.js';
+import pino from '#utils/Pino.js';
+import ytdl from '#utils/ytdl/index.js';
 
 class VideoDatabase extends AbstractDatabase {
 	constructor () {

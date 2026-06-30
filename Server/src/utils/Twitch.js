@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
-import { TwitchConfig } from '~/utils/Config.js';
-import Utils from '~/utils/index.js';
-import pino from '~/utils/Pino.js';
+import { TwitchConfig } from '#utils/Config.js';
+import Utils from '#utils/index.js';
+import pino from '#utils/Pino.js';
 
 class Twitch {
 	async getTwitchInfo (access_token) {

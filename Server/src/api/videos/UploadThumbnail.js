@@ -1,8 +1,8 @@
 import Joi from 'joi';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import VideoDatabase from '#db/VideoDatabase.js';
 
 class UploadThumbnail extends AbstractEndpoint {
 	setup () {

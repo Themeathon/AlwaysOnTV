@@ -1,10 +1,10 @@
 import Joi from 'joi';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import GameDatabase from '~/db/GameDatabase.js';
-import PlaylistDatabase from '~/db/PlaylistDatabase.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import GameDatabase from '#db/GameDatabase.js';
+import PlaylistDatabase from '#db/PlaylistDatabase.js';
 
-import YTDL from '~/utils/ytdl/index.js';
+import YTDL from '#utils/ytdl/index.js';
 
 class AddPlaylist extends AbstractEndpoint {
 	setup () {

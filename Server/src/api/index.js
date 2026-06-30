@@ -1,7 +1,7 @@
 import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import Router from '@koa/router';
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 export default async function setupRouters (app) {
 	const files = await readdir('src/api');
@@ -11,7 +11,7 @@ export default async function setupRouters (app) {
 
 		if (!(await stat(pth)).isDirectory()) continue;
 
-		const { default: initRouter } = await import(`~/api/${file}/index.js`);
+		const { default: initRouter } = await import(`./${file}/index.js`);
 		const { routes, allowedMethods } = await initRouter(Router);
 		app.use(routes);
 		app.use(allowedMethods);

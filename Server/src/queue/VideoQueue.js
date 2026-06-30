@@ -1,13 +1,13 @@
 import AbstractQueue from './AbstractQueue.js';
-import RandomPlaylistDatabase from '~/db/RandomPlaylistDatabase.js';
-import Twitch from '~/utils/Twitch.js';
-import Config from '~/utils/Config.js';
-import HistoryQueue from '~/queue/HistoryQueue.js';
-import ytdl from '~/utils/ytdl/index.js';
-import Socket from '~/Socket.js';
-import pino from '~/utils/Pino.js';
-import { fetchPlaylist, formatVideos} from '~/api/queue/AddRandomPlaylistToQueue.js';
-import DownloadManager from '~/utils/ytdl/DownloadManager.js';
+import RandomPlaylistDatabase from '#db/RandomPlaylistDatabase.js';
+import Twitch from '#utils/Twitch.js';
+import Config from '#utils/Config.js';
+import HistoryQueue from './HistoryQueue.js';
+import ytdl from '#utils/ytdl/index.js';
+import Socket from '../Socket.js';
+import pino from '#utils/Pino.js';
+import { fetchPlaylist, formatVideos} from '../api/queue/AddRandomPlaylistToQueue.js';
+import DownloadManager from '#utils/ytdl/DownloadManager.js';
 
 class VideoQueue extends AbstractQueue {
 	constructor () {

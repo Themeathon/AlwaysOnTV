@@ -1,6 +1,6 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
-import PlaylistDatabase from '~/db/PlaylistDatabase.js';
+import PlaylistDatabase from '#db/PlaylistDatabase.js';
 
 class GetAllPlaylists extends AbstractEndpoint {
 	setup () {

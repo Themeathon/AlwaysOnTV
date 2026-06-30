@@ -1,4 +1,4 @@
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';

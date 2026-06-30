@@ -1,13 +1,13 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
+import AbstractRouter from '../AbstractRouter.js';
+import checkPassword from '../PasswordMiddleware.js';
 
-import AddVideo from '~/api/videos/AddVideo.js';
-import DeleteVideoByID from '~/api/videos/DeleteVideoByID.js';
-import GetAllVideos from '~/api/videos/GetAllVideos.js';
-import GetVideoByID from '~/api/videos/GetVideoByID.js';
-import UpdateVideoByID from '~/api/videos/UpdateVideoByID.js';
-import ScanLocalVideos from '~/api/videos/ScanLocalVideos.js';
-import UploadThumbnail from '~/api/videos/UploadThumbnail.js';
+import AddVideo from './AddVideo.js';
+import DeleteVideoByID from './DeleteVideoByID.js';
+import GetAllVideos from './GetAllVideos.js';
+import GetVideoByID from './GetVideoByID.js';
+import UpdateVideoByID from './UpdateVideoByID.js';
+import ScanLocalVideos from './ScanLocalVideos.js';
+import UploadThumbnail from './UploadThumbnail.js';
 
 class VideoRouter extends AbstractRouter {
 	constructor () {

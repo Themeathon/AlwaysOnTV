@@ -1,9 +1,9 @@
 import Joi from 'joi';
 
-import VideoDatabase from '~/db/VideoDatabase.js';
-import VideoQueue from '~/queue/VideoQueue.js';
+import VideoDatabase from '#db/VideoDatabase.js';
+import VideoQueue from '../../queue/VideoQueue.js';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class AddVideoToQueue extends AbstractEndpoint {
 	setup () {

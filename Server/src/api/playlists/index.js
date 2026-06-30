@@ -1,14 +1,14 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
+import AbstractRouter from '../AbstractRouter.js';
+import checkPassword from '../PasswordMiddleware.js';
 
-import AddPlaylist from '~/api/playlists/AddPlaylist.js';
-import AddVideoToPlaylist from '~/api/playlists/AddVideoToPlaylist.js';
-import DeletePlaylistByID from '~/api/playlists/DeletePlaylistByID.js';
-import DeleteVideoFromPlaylist from '~/api/playlists/DeleteVideoFromPlaylist.js';
-import GetAllPlaylists from '~/api/playlists/GetAllPlaylists.js';
-import GetPlaylistByID from '~/api/playlists/GetPlaylistByID.js';
-import UpdatePlaylistByID from '~/api/playlists/UpdatePlaylistByID.js';
-import UpdateVideoInPlaylist from '~/api/playlists/UpdateVideoInPlaylist.js';
+import AddPlaylist from './AddPlaylist.js';
+import AddVideoToPlaylist from './AddVideoToPlaylist.js';
+import DeletePlaylistByID from './DeletePlaylistByID.js';
+import DeleteVideoFromPlaylist from './DeleteVideoFromPlaylist.js';
+import GetAllPlaylists from './GetAllPlaylists.js';
+import GetPlaylistByID from './GetPlaylistByID.js';
+import UpdatePlaylistByID from './UpdatePlaylistByID.js';
+import UpdateVideoInPlaylist from './UpdateVideoInPlaylist.js';
 
 class PlaylistRouter extends AbstractRouter {
 	constructor () {

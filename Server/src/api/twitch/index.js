@@ -1,7 +1,7 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
-import SearchGamesOnIGDB from '~/api/twitch/SearchGamesOnIGDB.js';
-import UpdateTwitchInfo from '~/api/twitch/UpdateTwitchInfo.js';
+import AbstractRouter from '../AbstractRouter.js';
+import checkPassword from '../PasswordMiddleware.js';
+import SearchGamesOnIGDB from './SearchGamesOnIGDB.js';
+import UpdateTwitchInfo from './UpdateTwitchInfo.js';
 
 class TwitchRouter extends AbstractRouter {
 	constructor () {

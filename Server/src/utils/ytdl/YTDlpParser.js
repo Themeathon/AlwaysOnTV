@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import util from 'util';
 import path from 'path';
 import fs from 'fs';
-import AbstractParser from '~/utils/ytdl/AbstractParser.js';
+import AbstractParser from '#utils/ytdl/AbstractParser.js';
 
 const execPromise = util.promisify(exec);
 

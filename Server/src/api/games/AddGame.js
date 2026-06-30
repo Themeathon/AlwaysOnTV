@@ -1,8 +1,8 @@
 import Joi from 'joi';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import GameDatabase from '~/db/GameDatabase.js';
-import Twitch from '~/utils/Twitch.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import GameDatabase from '#db/GameDatabase.js';
+import Twitch from '#utils/Twitch.js';
 
 class AddGame extends AbstractEndpoint {
 	setup () {

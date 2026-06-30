@@ -1,7 +1,7 @@
-import VideoQueue from '~/queue/VideoQueue.js';
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import Config from '~/utils/Config.js';
-// import pino from '~/utils/Pino.js';
+import VideoQueue from '../../queue/VideoQueue.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import Config from '#utils/Config.js';
+// import pino from '#utils/Pino.js';
 
 class GetNextVideo extends AbstractEndpoint {
 	setup () {

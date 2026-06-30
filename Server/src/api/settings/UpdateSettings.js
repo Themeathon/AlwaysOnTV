@@ -1,6 +1,6 @@
 import Joi from 'joi';
-import Config, {LocalMediaConfig, TwitchConfig} from '~/utils/Config.js';
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import Config, {LocalMediaConfig, TwitchConfig} from '#utils/Config.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class UpdateSettings extends AbstractEndpoint {
 	setup () {

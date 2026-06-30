@@ -1,8 +1,8 @@
 import Joi from 'joi';
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import Config from '~/utils/Config.js';
-import pino from '~/utils/Pino.js';
-import DownloadManager from '~/utils/ytdl/DownloadManager.js'; 
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import Config from '#utils/Config.js';
+import pino from '#utils/Pino.js';
+import DownloadManager from '#utils/ytdl/DownloadManager.js'; 
 
 class GetMPDFromYouTube extends AbstractEndpoint {
 	setup () {

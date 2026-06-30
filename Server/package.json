@@ -7,7 +7,6 @@
 	},
 	"scripts": {
 		"start": "node index.js",
-		"postinstall": "link-module-alias",
 		"migrate": "knex migrate:latest"
 	},
 	"keywords": [],
@@ -37,7 +36,6 @@
 		"koa-response-time": "^2.1.0",
 		"koa-session": "^7.0.2",
 		"koa-static": "^5.0.0",
-		"link-module-alias": "^1.2.0",
 		"lowdb": "^7.0.1",
 		"luxon": "^3.7.2",
 		"node-cache": "^5.1.2",
@@ -50,12 +48,8 @@
 		"eslint": "^10.5.0"
 	},
 	"imports": {
-		"~root/*": "./*.js",
-		"~/*": "./src/*.js"
-	},
-	"_moduleAliases": {
-		"~root": ".",
-		"~": "src"
+		"#db/*": "./src/db/*",
+		"#utils/*": "./src/utils/*"
 	},
 	"pnpm": {
 		"ignoredBuiltDependencies": [

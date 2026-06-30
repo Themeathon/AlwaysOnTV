@@ -1,4 +1,4 @@
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 export default class AbstractDatabase {
 	constructor (table_name) {

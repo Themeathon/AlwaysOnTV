@@ -1,12 +1,12 @@
 import Joi from 'joi';
 
-import YTDL from '~/utils/ytdl/index.js';
+import YTDL from '#utils/ytdl/index.js';
 
-import GameDatabase from '~/db/GameDatabase.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
-import RandomPlaylistDatabase from '~/db/RandomPlaylistDatabase.js';
+import GameDatabase from '#db/GameDatabase.js';
+import VideoDatabase from '#db/VideoDatabase.js';
+import RandomPlaylistDatabase from '#db/RandomPlaylistDatabase.js';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class AddVideo extends AbstractEndpoint {
 	setup () {

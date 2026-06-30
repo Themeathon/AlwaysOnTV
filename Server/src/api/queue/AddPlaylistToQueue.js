@@ -1,9 +1,9 @@
 import Joi from 'joi';
 
-import PlaylistDatabase from '~/db/PlaylistDatabase.js';
-import VideoQueue from '~/queue/VideoQueue.js';
+import PlaylistDatabase from '#db/PlaylistDatabase.js';
+import VideoQueue from '../../queue/VideoQueue.js';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class AddPlaylistToQueue extends AbstractEndpoint {
 	setup () {

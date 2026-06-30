@@ -1,8 +1,8 @@
-import AbstractRouter from '~/api/AbstractRouter.js';
-import checkPassword from '~/api/PasswordMiddleware.js';
+import AbstractRouter from '../AbstractRouter.js';
+import checkPassword from '../PasswordMiddleware.js';
 
-import AuthCallback from '~/api/auth/AuthCallback.js';
-import TestAuth from '~/api/auth/TestAuth.js';
+import AuthCallback from './AuthCallback.js';
+import TestAuth from './TestAuth.js';
 
 class GameRouter extends AbstractRouter {
 	constructor () {

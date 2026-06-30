@@ -1,8 +1,8 @@
 import { Server } from 'socket.io';
-import HistoryQueue from '~/queue/HistoryQueue.js';
-import VideoQueue from '~/queue/VideoQueue.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
-import pino from '~/utils/Pino.js';
+import HistoryQueue from './queue/HistoryQueue.js';
+import VideoQueue from './queue/VideoQueue.js';
+import VideoDatabase from './db/VideoDatabase.js';
+import pino from '#utils/Pino.js';
 
 export default class Socket {
 	static {

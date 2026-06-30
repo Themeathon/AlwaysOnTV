@@ -1,9 +1,9 @@
 import { pipeline } from 'node:stream';
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import YTDL from '~/utils/ytdl/index.js';
-import Config from '~/utils/Config.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import YTDL from '#utils/ytdl/index.js';
+import Config from '#utils/Config.js';
 import got from 'got'; 
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 class GetProxiedStreamType extends AbstractEndpoint {
 	setup () {

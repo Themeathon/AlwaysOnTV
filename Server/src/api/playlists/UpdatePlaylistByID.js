@@ -1,7 +1,7 @@
 import Joi from 'joi';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
-import PlaylistDatabase from '~/db/PlaylistDatabase.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
+import PlaylistDatabase from '#db/PlaylistDatabase.js';
 
 class UpdatePlaylistByID extends AbstractEndpoint {
 	setup () {

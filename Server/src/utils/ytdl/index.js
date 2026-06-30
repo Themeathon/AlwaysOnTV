@@ -2,10 +2,10 @@ import ytpl from '@distube/ytpl';
 import ytDashManifestGenerator from '@freetube/yt-dash-manifest-generator';
 import { Duration } from 'luxon';
 import NodeCache from 'node-cache';
-import { ServerConfig } from '~/utils/Config.js';
+import { ServerConfig } from '#utils/Config.js';
 import { Innertube, UniversalCache } from 'youtubei.js';
 
-import YTDlpParser from '~/utils/ytdl/YTDlpParser.js';
+import YTDlpParser from '#utils/ytdl/YTDlpParser.js';
 
 let ytClient;
 

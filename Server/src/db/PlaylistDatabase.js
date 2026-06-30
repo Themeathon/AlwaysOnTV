@@ -1,7 +1,7 @@
 import AbstractDatabase from './AbstractDatabase.js';
 
-import GameDatabase from '~/db/GameDatabase.js';
-import pino from '~/utils/Pino.js';
+import GameDatabase from '#db/GameDatabase.js';
+import pino from '#utils/Pino.js';
 
 class PlaylistDatabase extends AbstractDatabase {
 	constructor () {

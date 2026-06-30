@@ -1,9 +1,9 @@
 import Joi from 'joi';
 
-import GameDatabase from '~/db/GameDatabase.js';
-import VideoDatabase from '~/db/VideoDatabase.js';
+import GameDatabase from '#db/GameDatabase.js';
+import VideoDatabase from '#db/VideoDatabase.js';
 
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class UpdateVideoByID extends AbstractEndpoint {
 	setup () {

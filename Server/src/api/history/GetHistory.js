@@ -1,6 +1,6 @@
-import AbstractEndpoint from '~/api/AbstractEndpoint.js';
+import AbstractEndpoint from '../AbstractEndpoint.js';
 
-import HistoryQueue from '~/queue/HistoryQueue.js';
+import HistoryQueue from '../../queue/HistoryQueue.js';
 
 class GetHistory extends AbstractEndpoint {
 	setup () {

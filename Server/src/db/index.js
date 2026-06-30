@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import Knex from 'knex';
-import pino from '~/utils/Pino.js';
+import pino from '#utils/Pino.js';
 
 let knex;
 
