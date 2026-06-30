@@ -177,7 +177,7 @@ const playVideo = async () => {
 
             try {
                 // Fetch our stream data orchestrator payload
-                const response = await fetch(`${api_url}/api/youtube/get-mpd?videoId=${currentVideo.value.id}&videoQuality=${videoQuality}`);
+                const response = await fetch(`${api_url}api/youtube/get-mpd?videoId=${currentVideo.value.id}&videoQuality=${videoQuality}`);
                 const data = await response.json();
 
                 if (data && data.directUrl) {
