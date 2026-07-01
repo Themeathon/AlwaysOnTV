@@ -2,7 +2,7 @@ import Koa from 'koa';
 import responseTime from 'koa-response-time';
 import { koaBody } from 'koa-body';
 import conditional from 'koa-conditional-get';
-import etag from 'koa-etag';
+import etag from '@koa/etag';
 import json from 'koa-json';
 import cors from '@koa/cors';
 import serve from 'koa-static';
