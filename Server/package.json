@@ -13,7 +13,6 @@
 	"author": "AlwaysOnTV",
 	"license": "MIT",
 	"dependencies": {
-		"@distube/ytpl": "^1.2.4",
 		"@freetube/yt-dash-manifest-generator": "^1.1.1",
 		"@koa/cors": "^5.0.0",
 		"@koa/etag": "^5.0.0",

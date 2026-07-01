@@ -1,4 +1,3 @@
-import ytpl from '@distube/ytpl';
 import ytDashManifestGenerator from '@freetube/yt-dash-manifest-generator';
 import { Duration } from 'luxon';
 import NodeCache from 'node-cache';
@@ -17,17 +16,35 @@ export default class YTDL {
 		this.parser = new YTDlpParser();
 	}
 
-	static extractID(urlOrId) {
+	static extractID(urlOrId, type = 'video') {
 		if (!urlOrId) return urlOrId;
-		if (/^[a-zA-Z0-9_-]{11}$/.test(urlOrId)) return urlOrId;
-		const match = urlOrId.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/);
-		return match ? match[1] : urlOrId;
+
+		// Videos are exactly 11 characters; Playlists are typically 18 to 40 characters
+		const cleanIdRegex = type === 'video' ? /^[a-zA-Z0-9_-]{11}$/ : /^[a-zA-Z0-9_-]{18,40}$/;
+		if (cleanIdRegex.test(urlOrId)) return urlOrId;
+
+		try {
+			const url = new URL(urlOrId);
+
+			if (type === 'playlist') {
+				return url.searchParams.get('list') || urlOrId;
+			}
+
+			if (url.hostname === 'youtu.be') {
+				return url.pathname.slice(1);
+			}
+			return url.searchParams.get('v') || url.pathname.split('/').pop();
+		} catch {
+			return urlOrId;
+		}
 	}
 
 	static async initYT() {
 		if (!ytClient) {
-			ytClient = await Innertube.create({ cache: new UniversalCache(false) });
-		}
+            ytClient = await Innertube.create({ 
+                cache: new UniversalCache(false)
+            });
+        }
 	}
 
 	static async getVideoInfo(youtubeID, force = false) {
@@ -59,10 +76,10 @@ export default class YTDL {
 		return mappedInfo;
 	}
 
-	static async getPlaylistData(playlistID, withVideos = true) {
-		return ytpl(playlistID, {
-			limit: withVideos ? Infinity : 1,
-		});
+	static async getPlaylistData(playlistID) {
+		await this.initYT();
+		const playlistId = YTDL.extractID(playlistID, 'playlist');
+		return await ytClient.getPlaylist(playlistId);
 	}
 
 	static durationStringToSeconds(durationString) {
@@ -75,24 +92,63 @@ export default class YTDL {
 	}
 
 	static async getPlaylist(playlistID, withVideos = true) {
-		if (!playlistID || !ytpl.validateID(playlistID)) return false;
+		if (!playlistID) return false;
 
-		const playlist = await this.getPlaylistData(playlistID, withVideos);
+		try {
+			let playlist = await this.getPlaylistData(playlistID);
+			const info = playlist.info || {};
 
-		return {
-			id: playlist.id,
-			title: playlist.title,
-			videoCount: playlist.total_items,
-			thumbnail_url: playlist.thumbnail.url,
-			videos: withVideos ? playlist.items.map(video => {
-				return {
-					id: video.id,
-					title: video.title,
-					thumbnail_url: video.thumbnail,
-					length: this.durationStringToSeconds(video.duration),
-				};
-			}) : [],
-		};
+			const mappedPlaylist = {
+				id: playlist.id || playlistID,
+				title: info.title || 'Unknown Playlist',
+				videoCount: info.total_items || playlist.items?.length || 0,
+				thumbnail_url: info.thumbnails?.[0]?.url || info.thumbnail?.url || '',
+				videos: []
+			};
+    
+			if (withVideos && playlist.items) {
+				const allItems = playlist.items;
+
+				while (playlist.has_continuation) {
+					playlist = await playlist.getContinuation();
+					if (playlist.items) {
+						allItems.push(...playlist.items);
+					}
+				}
+
+				mappedPlaylist.videos = allItems
+					.map(({
+						content_id,
+						id,
+						metadata,
+						content_image,
+						title,
+						thumbnails,
+						thumbnail,
+						duration
+					}) => {
+						const videoId = content_id || id;
+						if (!videoId) return null;
+
+						const imageArray = content_image?.image || thumbnails || thumbnail;
+						const badgeText = content_image?.overlays?.[0]?.badges?.[0]?.text;
+
+						return {
+							id: videoId,
+							title: metadata?.title?.text || title?.toString() || 'Unknown Video',
+							thumbnail_url: Array.isArray(imageArray) ? imageArray[0]?.url : (imageArray?.url || ''),
+							length: badgeText ? this.durationStringToSeconds(badgeText) : (duration?.seconds || 0),
+							source_type: 'youtube'
+						};
+					})
+					.filter(Boolean); 
+			}
+            
+			return mappedPlaylist;
+		} catch (error) {
+			console.error('Failed to parse YouTube playlist:', error);
+			throw error;
+		}
 	}
 
 	static async getCachedVideoAndAudioStreams(youtubeID, force = false) {

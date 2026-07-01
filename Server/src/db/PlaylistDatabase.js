@@ -90,7 +90,8 @@ class PlaylistDatabase extends AbstractDatabase {
 									thumbnail_url: video.thumbnail_url,
 									length: video.length,
 									gameId,
-									sourceType: video.sourceType,
+									source_type: video.source_type,
+									file_path: '',
 								});
 
 							// If new videos that aren't yet in the database should be added to the random playlist
