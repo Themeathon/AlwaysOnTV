@@ -41,28 +41,17 @@ class ScanLocalVideos extends AbstractEndpoint {
 		const thumbnailPublicPath = `/thumbnails/${thumbnailFileName}`;
 		const absoluteThumbnailPath = path.join(thumbnailDir, thumbnailFileName);
 
-		let duration = 0;
-
+		const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
 		try {
-			const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
 			const stdout = execSync(ffprobeCmd, { stdio: "pipe" });
-			duration = parseFloat(stdout.toString().trim()) || 0;
+			const duration = parseFloat(stdout.toString().trim()) || 0;
 
-		} catch (error) {
-			pino.error(`Error natively probing or generating thumbnail for ${filePath}: ${error.message}`);
-
-			return {
-				length: 0,
-				thumbnail_url: ''
-			};
-		}
-
-		let timestamp = '1';
+			let timestamp = '1';
 			if (duration > 10) {
 				timestamp = (duration * 0.2).toFixed(2);
-		}
+			}
 
-		await new Promise((resolve, reject) => {
+			await new Promise((resolve, reject) => {
 				const ffmpegProcess = spawn('ffmpeg', [
 					'-y',                 // Automatically overwrite destination file
 					'-ss', timestamp,     // Seek to timestamp dynamically
@@ -73,19 +62,27 @@ class ScanLocalVideos extends AbstractEndpoint {
 					'-f', 'image2',       // Force image format writer
 					absoluteThumbnailPath
 				]);
-
+	
 				ffmpegProcess.on('close', (code) => {
 					if (code === 0) resolve();
 					else reject(new Error(`ffmpeg thumbnail process exited with code ${code}`));
 				});
-
+	
 				ffmpegProcess.on('error', (error) => reject(error));
-		});
-			
-		return {
-			length: Math.round(duration),
-			thumbnail_url: thumbnailPublicPath,
-		};
+			});
+
+			return {
+				length: Math.round(duration),
+				thumbnail_url: thumbnailPublicPath,
+			};
+		} catch (error) {
+			pino.error(`Error natively probing or generating thumbnail for ${filePath}: ${error.message}`);
+
+			return {
+				length: 0,
+				thumbnail_url: ''
+			};
+		}
 	};
 
 	async runBackgroundScan (allVideoFiles) {
