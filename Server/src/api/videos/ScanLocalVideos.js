@@ -1,3 +1,4 @@
+import { execSync, spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
@@ -9,14 +10,6 @@ import GameDatabase from '#db/GameDatabase.js';
 import RandomPlaylistDatabase from '#db/RandomPlaylistDatabase.js';
 import pino from '#utils/Pino.js';
 import Socket from '../../Socket.js';
-
-//ffmpeg setup
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegPath from 'ffmpeg-static';
-import { path as ffprobePath } from 'ffprobe-static';
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 const SUPPORTED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov'];
 
@@ -44,45 +37,54 @@ class ScanLocalVideos extends AbstractEndpoint {
 	}
 
 	async processVideoFile (filePath, videoId) {
-		return new Promise((resolve) => {
-			const thumbnailDir = path.join(process.cwd(), 'public', 'thumbnails');
-			const thumbnailFileName = `${videoId}.png`;
-			const thumbnailPublicPath = `/thumbnails/${thumbnailFileName}`;
+		const thumbnailDir = path.join(process.cwd(), 'public', 'thumbnails');
+		const thumbnailFileName = `${videoId}.png`;
+		const thumbnailPublicPath = `/thumbnails/${thumbnailFileName}`;
+		const absoluteThumbnailPath = path.join(thumbnailDir, thumbnailFileName);
 
-			ffmpeg.ffprobe(filePath, (err, metadata) => {
-				if (err) {
-					pino.error(`Error probing file ${filePath}: ${err.message}`);
-					return resolve({ length: 0, thumbnail_url: '' });
-				}
+		const ffprobeCmd = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
+		try {
+			const stdout = execSync(ffprobeCmd, { stdio: "pipe" });
+			const duration = parseFloat(stdout.toString().trim()) || 0;
 
-				const duration = metadata.format.duration || 0;
+			let timestamp = '1';
+			if (duration > 10) {
+				timestamp = (duration * 0.2).toFixed(2);
+			}
 
-				const timestamp = duration > 10 ? '20%' : '1';
-
-				ffmpeg(filePath)
-					.on('end', () => {
-						resolve({
-							length: Math.round(duration),
-							thumbnail_url: thumbnailPublicPath,
-						});
-					})
-					.on('error', (err) => {
-						pino.error(`Error generating thumbnail for ${filePath}: ${err.message}`);
-						resolve({
-							length: Math.round(duration),
-							thumbnail_url: '',
-						});
-					})
-					.screenshots({
-						count: 1,
-						folder: thumbnailDir,
-						filename: thumbnailFileName,
-						timestamps: [timestamp],
-						size: '640x360',
-					});
+			await new Promise((resolve, reject) => {
+				const ffmpegProcess = spawn('ffmpeg', [
+					'-y',                 // Automatically overwrite destination file
+					'-ss', timestamp,     // Seek to timestamp dynamically
+					'-i', filePath,       // Input video path
+					'-frames:v', '1',     // Grab exactly one frame
+					'-update', '1',		  // Expect only one frame, not a sequence
+					'-s', '644x360',      // Resize width/height
+					'-f', 'image2',       // Force image format writer
+					absoluteThumbnailPath
+				]);
+	
+				ffmpegProcess.on('close', (code) => {
+					if (code === 0) resolve();
+					else reject(new Error(`ffmpeg thumbnail process exited with code ${code}`));
+				});
+	
+				ffmpegProcess.on('error', (error) => reject(error));
 			});
-		});
-	}
+
+			return {
+				length: Math.round(duration),
+				thumbnail_url: thumbnailPublicPath,
+			};
+		} catch (error) {
+			pino.error(`Error natively probing or generating thumbnail for ${filePath}: ${error.message}`);
+
+			return {
+				length: 0,
+				thumbnail_url: ''
+			};
+		}
+	};
 
 	async runBackgroundScan (allVideoFiles) {
 		const addedVideos = [];
@@ -118,8 +120,7 @@ class ScanLocalVideos extends AbstractEndpoint {
 						try {
 							await fs.access(absoluteThumbnailPath);
 							thumbnailMissing = false;
-							// eslint-disable-next-line no-unused-vars
-						} catch (e) {
+						} catch {
 							thumbnailMissing = true;
 						}
 					}
@@ -178,6 +179,16 @@ class ScanLocalVideos extends AbstractEndpoint {
 	}
 
 	async scanVideos (ctx, next) {
+		try {
+			// Validate that ffmpeg/ffprobe aere installed on the PATH environment
+			execSync('ffmpeg -version', { stdio: 'ignore' });
+			execSync('ffprobe -version', { stdio: 'ignore' });
+
+		} catch(error) {
+			pino.error(`Global ffmpeg validation failed: ${error.message}`);
+			return super.error(ctx, 'Missing system dependencies: Please make sure ffmpeg and ffprobe are installed globally and mapped in your environment PATH.');
+		}
+
 		const basePaths = Config.data.local_media?.base_paths || [];
 		if (!basePaths.length) {
 			return super.error(ctx, 'No local media base paths configured in config.json');
