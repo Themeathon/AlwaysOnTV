@@ -1,9 +1,11 @@
+import URL from 'node:url';
+
 import ytDashManifestGenerator from '@freetube/yt-dash-manifest-generator';
-import { Duration } from 'luxon';
 import NodeCache from 'node-cache';
+import { Duration } from 'luxon';
+import { Innertube, UniversalCache } from 'youtubei.js';
 import { ServerConfig } from '#utils/Config.js';
 import pino from '#utils/Pino.js';
-import { Innertube, UniversalCache } from 'youtubei.js';
 
 import YTDlpParser from '#utils/ytdl/YTDlpParser.js';
 
