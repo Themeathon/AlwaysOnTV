@@ -1,3 +1,6 @@
+import { setTimeout } from 'node:timers';
+import URL from 'node:url';
+
 import got from 'got';
 import { ServerConfig } from '#utils/Config.js';
 import pino from '#utils/Pino.js';

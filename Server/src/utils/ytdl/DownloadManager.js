@@ -1,8 +1,10 @@
-import { exec } from 'child_process';
-import util from 'util';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import { exec } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import util from 'node:util';
+
 import pino from '#utils/Pino.js';
 
 const execPromise = util.promisify(exec);

@@ -16,6 +16,8 @@ class AuthCallback extends AbstractEndpoint {
 			return super.error(ctx, 'Not authenticated with Twitch');
 		}
 
+		// it's clearly used below for ctx.body
+		// eslint-disable-next-line no-useless-assignment
 		let data = {};
 
 		try {

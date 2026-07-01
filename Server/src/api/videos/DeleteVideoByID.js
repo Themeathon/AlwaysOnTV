@@ -1,9 +1,10 @@
-import Joi from 'joi';
+import console from 'node:console';
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 
+import Joi from 'joi';
 import VideoDatabase from '#db/VideoDatabase.js';
-
 import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class DeleteVideoByID extends AbstractEndpoint {
