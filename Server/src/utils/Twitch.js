@@ -1,3 +1,5 @@
+import { URL, URLSearchParams } from 'node:url';
+
 import { DateTime } from 'luxon';
 import { TwitchConfig } from '#utils/Config.js';
 import Utils from '#utils/index.js';

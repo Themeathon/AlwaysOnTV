@@ -1,6 +1,7 @@
+import { URL } from 'node:url';
+
 import AbstractEndpoint from '../AbstractEndpoint.js';
 import got from 'got';
-
 import pino from '#utils/Pino.js';
 
 const rangePattern = /^bytes=?(\d*)-?(\d*)$/;
@@ -26,7 +27,7 @@ class ProxyRequest extends AbstractEndpoint {
 				end: endByte,
 			};
 		}
-		catch (_) {
+		catch {
 			return {
 				start: 0,
 				end: 0,

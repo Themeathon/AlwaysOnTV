@@ -34,7 +34,7 @@ class GetMPDFromYouTube extends AbstractEndpoint {
 
 			const isDownloaded = DownloadManager.isDownloaded(videoId);
 			const isActivelyDownloading = DownloadManager.activeDownloads.has(videoId);
-			const resolvedPath = DownloadManager.getFilePath(videoId);
+			// const resolvedPath = DownloadManager.getFilePath(videoId);
 
 			// pino.info(`[GetMPDFromYouTube] Diagnostics for ID ${videoId} -> isDownloaded: ${isDownloaded}, isActivelyDownloading: ${isActivelyDownloading}, resolvedPath: "${resolvedPath}"`);
 

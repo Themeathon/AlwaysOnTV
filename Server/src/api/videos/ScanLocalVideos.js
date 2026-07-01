@@ -1,11 +1,13 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
+
 import AbstractEndpoint from '../AbstractEndpoint.js';
 import Config from '#utils/Config.js';
 import VideoDatabase from '#db/VideoDatabase.js';
 import GameDatabase from '#db/GameDatabase.js';
 import RandomPlaylistDatabase from '#db/RandomPlaylistDatabase.js';
 import pino from '#utils/Pino.js';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import Socket from '../../Socket.js';
 
 //ffmpeg setup
@@ -42,7 +44,7 @@ class ScanLocalVideos extends AbstractEndpoint {
 	}
 
 	async processVideoFile (filePath, videoId) {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			const thumbnailDir = path.join(process.cwd(), 'public', 'thumbnails');
 			const thumbnailFileName = `${videoId}.png`;
 			const thumbnailPublicPath = `/thumbnails/${thumbnailFileName}`;
