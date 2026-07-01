@@ -2,6 +2,7 @@ import ytDashManifestGenerator from '@freetube/yt-dash-manifest-generator';
 import { Duration } from 'luxon';
 import NodeCache from 'node-cache';
 import { ServerConfig } from '#utils/Config.js';
+import pino from '#utils/Pino.js';
 import { Innertube, UniversalCache } from 'youtubei.js';
 
 import YTDlpParser from '#utils/ytdl/YTDlpParser.js';
@@ -146,7 +147,8 @@ export default class YTDL {
             
 			return mappedPlaylist;
 		} catch (error) {
-			console.error('Failed to parse YouTube playlist:', error);
+			pino.error('Failed to parse YouTube playlist');
+			pino.error(error);
 			throw error;
 		}
 	}
