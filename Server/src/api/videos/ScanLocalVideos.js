@@ -1,14 +1,15 @@
+import { execSync, spawn } from 'node:child_process';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import process from 'node:process';
+
 import AbstractEndpoint from '../AbstractEndpoint.js';
 import Config from '#utils/Config.js';
 import VideoDatabase from '#db/VideoDatabase.js';
 import GameDatabase from '#db/GameDatabase.js';
 import RandomPlaylistDatabase from '#db/RandomPlaylistDatabase.js';
 import pino from '#utils/Pino.js';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import Socket from '../../Socket.js';
-import { execSync , spawn} from 'node:child_process';
-import process from 'node:process';
 
 const SUPPORTED_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.avi', '.mov'];
 

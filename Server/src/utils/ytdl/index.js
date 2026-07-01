@@ -156,7 +156,7 @@ export default class YTDL {
 			audio.url = `${api_url}/youtube/${id}/audio?videoQuality=${videoQuality}`;
 
 			return ytDashManifestGenerator.generate_dash_file_from_formats([video, audio], duration);
-		} catch (e) {
+		} catch {
 			return await this.getProgressiveStreamFallback(id);
 		}
 	}
@@ -185,7 +185,10 @@ export default class YTDL {
 			if (url) {
 				return { directUrl: url };
 			}
-		} catch (err) {}
+		} catch {
+			return { error: 'NO_VIDEO_OR_AUDIO' };
+		}
+
 		return { error: 'NO_VIDEO_OR_AUDIO' };
 	}
 }
