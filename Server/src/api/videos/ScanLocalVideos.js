@@ -77,15 +77,8 @@ class ScanLocalVideos extends AbstractEndpoint {
 			} catch (error) {
 				pino.error(`Error natively probing or generating thumbnail for ${filePath}: ${error.message}`);
 
-				// Try to recover duration if thumbnail creation failed but ffprobe worked
-				let fallbackDuration = 0;
-				try {
-					const stdout = execSync(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`, { stdio: 'pipe' });
-					fallbackDuration = Math.round(parseFloat(stdout.toString().trim()) || 0);
-				} catch (_) {}
-
 				return {
-					length: fallbackDuration,
+					length: 0,
 					thumbnail_url: ''
 				};
 			}
