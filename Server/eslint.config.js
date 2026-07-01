@@ -1,5 +1,6 @@
-import js from "@eslint/js";
-import { defineConfig } from "eslint/config";
+import globals from 'globals';
+import js from '@eslint/js';
+import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
     {
@@ -10,7 +11,8 @@ export default defineConfig([
         languageOptions: {
             // see https://node.green/ for supported ES versions
             ecmaVersion: 14,
-            sourceType: "module"
+            sourceType: "module",
+            globals: globals.nodeBuiltin,
         },
         // Place for our own rules on top of js/recommended
         rules: {}
