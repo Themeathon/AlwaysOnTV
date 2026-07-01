@@ -1,6 +1,5 @@
 import pino from 'pino';
 import pretty from 'pino-pretty';
-import { DateTime } from 'luxon';
 
 // TODO: Log rotation (rotate every day into files)
 const streams = [
@@ -9,7 +8,7 @@ const streams = [
 		level: 'info',
 		stream: pretty({
 			customPrettifiers: {
-				time: timestamp => `[${DateTime.now().toISODate()} ${timestamp}]`,
+				time: timestamp => `[${Temporal.Now.plainDateISO()} ${timestamp}]`,
 			},
 		}),
 	},
@@ -18,7 +17,7 @@ const streams = [
 		level: 'error',
 		stream: pretty({
 			customPrettifiers: {
-				time: timestamp => `[${DateTime.now().toISODate()} ${timestamp}]`,
+				time: timestamp => `[${Temporal.Now.plainDateISO()} ${timestamp}]`,
 			},
 		}),
 	},
@@ -29,7 +28,7 @@ const streams = [
 			colorize: false,
 			destination: './info.log',
 			customPrettifiers: {
-				time: timestamp => `[${DateTime.now().toISODate()} ${timestamp}]`,
+				time: timestamp => `[${Temporal.Now.plainDateISO()} ${timestamp}]`,
 			},
 		}),
 	},
@@ -40,7 +39,7 @@ const streams = [
 			colorize: false,
 			destination: './error.log',
 			customPrettifiers: {
-				time: timestamp => `[${DateTime.now().toISODate()} ${timestamp}]`,
+				time: timestamp => `[${Temporal.Now.plainDateISO()} ${timestamp}]`,
 			},
 		}),
 	},

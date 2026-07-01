@@ -87,11 +87,13 @@ export default class YTDL {
 
 	static durationStringToSeconds(durationString) {
 		const split = durationString.split(':').reverse();
-		return Duration.fromObject({
+		const duration = Temporal.Duration.from({
 			hours: split[2] || 0,
 			minutes: split[1] || 0,
 			seconds: split[0] || 0,
-		}).as('seconds');
+		});
+		
+		return duration.total('seconds');
 	}
 
 	static async getPlaylist(playlistID, withVideos = true) {

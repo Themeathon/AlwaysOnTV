@@ -1,6 +1,5 @@
 import { URL, URLSearchParams } from 'node:url';
 
-import { DateTime } from 'luxon';
 import { TwitchConfig } from '#utils/Config.js';
 import Utils from '#utils/index.js';
 import pino from '#utils/Pino.js';
@@ -37,11 +36,11 @@ class Twitch {
 	}
 
 	async updateTwitchData (access_token, refresh_token, expires_in) {
-		const expires_at = DateTime.now().plus({ seconds: expires_in });
+		const expires_at = Temporal.Now.instant().plus({ seconds: expires_in });
 
 		TwitchConfig.accessToken = access_token;
 		TwitchConfig.refreshToken = refresh_token;
-		TwitchConfig.expiresAt = expires_at.toISO();
+		TwitchConfig.expiresAt = expires_at.toString();
 
 		TwitchConfig.data = await this.getTwitchInfo(access_token);
 	}
@@ -54,8 +53,10 @@ class Twitch {
 		)
 			return null;
 
+		const expires_at = Temporal.Instant.from(TwitchConfig.expiresAt);
+
 		if (
-			DateTime.now() < DateTime.fromISO(TwitchConfig.expiresAt) &&
+			Temporal.Instant.compare(Temporal.Now.instant(), expires_at) < 0 &&
 			TwitchConfig.accessToken &&
 			!force_renew
 		)
@@ -96,8 +97,10 @@ class Twitch {
 	}
 
 	async getAppAccessToken (force_renew = false) {
+		const expires_at = Temporal.Instant.from(TwitchConfig.appExpiresAt);
+
 		if (
-			DateTime.now() < DateTime.fromISO(TwitchConfig.appExpiresAt) &&
+			Temporal.Instant.compare(Temporal.Now.instant(), expires_at) < 0 &&
 			TwitchConfig.appAccessToken &&
 			!force_renew
 		)
@@ -124,10 +127,10 @@ class Twitch {
 
 			if (!access_token || !expires_in) return;
 
-			const expires_at = DateTime.now().plus({ seconds: expires_in });
+			const expires_at = Temporal.Now.instant().plus({ seconds: expires_in });
 
 			TwitchConfig.appAccessToken = access_token;
-			TwitchConfig.appExpiresAt = expires_at.toISO();
+			TwitchConfig.appExpiresAt = expires_at.toString();
 
 			return access_token;
 		}
