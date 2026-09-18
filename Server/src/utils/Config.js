@@ -52,6 +52,7 @@ export default class Config {
 			use_random_playlist: true,
 			use_entire_random_playlist: false,
 			prefetch_queue_amount: 1,
+			youtube_playback_mode: 'stream',
 			local_media: {
 				base_paths: [
 					'',
@@ -136,6 +137,18 @@ export default class Config {
 
         this.save();
     }
+
+	static get youtubePlaybackMode () {
+		return this.data.youtube_playback_mode ?? 'stream';
+	}
+
+	static set youtubePlaybackMode (youtube_playback_mode) {
+		if (youtube_playback_mode === undefined) return;
+
+		this.data.youtube_playback_mode = youtube_playback_mode;
+
+		this.save();
+	}
 }
 
 export class ServerConfig {

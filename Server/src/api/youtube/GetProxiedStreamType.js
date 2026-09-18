@@ -1,61 +1,79 @@
 import { pipeline } from 'node:stream';
+import got from 'got';
 import AbstractEndpoint from '../AbstractEndpoint.js';
 import YTDL from '#utils/ytdl/index.js';
-import Config from '#utils/Config.js';
-import got from 'got'; 
 import pino from '#utils/Pino.js';
+
+const FORWARDED_HEADERS = ['content-type', 'content-length', 'content-range', 'accept-ranges'];
 
 class GetProxiedStreamType extends AbstractEndpoint {
 	setup () {
 		this.add(this.proxyStream);
 	}
 
-	async proxyStream (ctx, next) {
+	async openUpstream (videoId, formatId, range, force) {
+		const format = await YTDL.getStreamFormat(videoId, formatId, force);
+		if (!format) return null;
+
+		const headers = { ...format.http_headers };
+		if (range) headers.range = range;
+
+		const stream = got.stream(format.url, {
+			headers,
+			decompress: false,
+			throwHttpErrors: false,
+		});
+
+		const response = await new Promise((resolve, reject) => {
+			stream.once('response', resolve);
+			stream.once('error', reject);
+		});
+
+		return { stream, response };
+	}
+
+	async proxyStream (ctx) {
+		const { videoId, formatId } = ctx.params;
+		const { range } = ctx.headers;
+
 		try {
-			const { videoId } = ctx.params;
-			
-			const videoQuality = Config.maxVideoQuality || 1080;
+			let upstream = await this.openUpstream(videoId, formatId, range, false);
 
-			pino.info(`[GetProxiedStreamType] Launching stream proxy tracking for ID: ${videoId} at configured limit: ${videoQuality}p`);
-
-			const streamData = await YTDL.getBestVideoAndAudio(videoId, videoQuality);
-			
-			if (!streamData || !streamData.video || !streamData.video.url) {
-				return super.error(ctx, 'Stream URL not resolvable', 404);
+			if (upstream && [403, 410].includes(upstream.response.statusCode)) {
+				upstream.stream.destroy();
+				upstream = await this.openUpstream(videoId, formatId, range, true);
 			}
 
-			const targetUrl = streamData.video.url;
-
-			ctx.status = ctx.headers.range ? 206 : 200;
-			ctx.set('Content-Type', 'video/mp4');
-			ctx.set('Accept-Ranges', 'bytes');
-
-			const headers = {};
-			if (ctx.headers.range) {
-				headers.range = ctx.headers.range;
+			if (!upstream) {
+				return super.error(ctx, `Format ${formatId} not available for ${videoId}`, 404);
 			}
 
-			const remoteStream = got.stream(targetUrl, { 
-				headers,
-				decompress: false 
-			});
+			const { stream, response } = upstream;
 
-			pipeline(remoteStream, ctx.res, (err) => {
-				if (err) {
-					if (err.code === 'ERR_STREAM_PREMATURE_CLOSE' || err.name === 'RequestError') {
-						return; 
-					}
-					pino.error(`[GetProxiedStreamType] Proxy stream pipeline connection exception: ${err.message}`);
-				}
-			});
+			if (response.statusCode >= 400) {
+				stream.destroy();
+				pino.warn(`[GetProxiedStreamType] Upstream returned ${response.statusCode} for ${videoId}/${formatId}`);
+				return super.error(ctx, `Upstream returned ${response.statusCode}`, 502);
+			}
+
+			ctx.status = response.statusCode;
+			for (const header of FORWARDED_HEADERS) {
+				if (response.headers[header]) ctx.set(header, response.headers[header]);
+			}
 
 			ctx.respond = false;
-			return next();
+			ctx.res.flushHeaders();
 
-		} catch (error) {
-			pino.error(`[GetProxiedStreamType] Critical setup error for stream proxy: ${error.message}`);
+			pipeline(stream, ctx.res, error => {
+				if (error && error.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+					pino.error(`[GetProxiedStreamType] Pipeline error for ${videoId}/${formatId}: ${error.message}`);
+				}
+			});
+		}
+		catch (error) {
+			pino.error({ err: error }, `[GetProxiedStreamType] Failed to proxy ${videoId}/${formatId}`);
 			if (ctx.respond !== false) {
-				return super.error(ctx, 'Error establishing proxy connection pipeline', 500);
+				return super.error(ctx, 'Error proxying stream', 502);
 			}
 		}
 	}

@@ -133,34 +133,32 @@ class VideoQueue extends AbstractQueue {
 
 	async prefetchUpcomingVideos () {
 		const prefetchAmount = Config.prefetchQueueAmount || 1;
-		
-		const whiteListedIds = [];
+		const quality = Config.maxVideoQuality || 1080;
 
 		const currentVideo = this.getCurrentVideo();
-		if (currentVideo && currentVideo.id && currentVideo.source_type !== 'local') {
-			whiteListedIds.push(currentVideo.id);
-			if (!DownloadManager.isDownloaded(currentVideo.id)) {
-				pino.info(`[VideoQueue] Current video ${currentVideo.id} is missing from cache. Starting immediate download.`);
-				await DownloadManager.downloadVideo(currentVideo.id, Config.maxVideoQuality || 1080);
-			}
-		}
+		const upcomingVideos = this.db.data.items.slice(0, prefetchAmount);
+		const youtubeIds = [currentVideo, ...upcomingVideos]
+			.filter(video => video?.id && video.source_type !== 'local')
+			.map(video => video.id);
 
-		const itemsToPrefetch = this.db.data.items.slice(0, prefetchAmount);
-		
-		for (const item of itemsToPrefetch) {
-			if (item && item.id && item.source_type !== 'local') {
-				whiteListedIds.push(item.id);
-			}
-		}
+		DownloadManager.cleanStaleCache(youtubeIds);
 
-		DownloadManager.cleanStaleCache(whiteListedIds);
-
-		for (const item of itemsToPrefetch) {
-			if (item && item.id && item.source_type !== 'local') {
-				if (!DownloadManager.isDownloaded(item.id) && !DownloadManager.activeDownloads.has(item.id)) {
-					pino.info(`[VideoQueue] Caching ahead sequentially. Starting track: ${item.id}`);
-					await DownloadManager.downloadVideo(item.id, Config.maxVideoQuality || 1080);
+		if (Config.youtubePlaybackMode !== 'download') {
+			for (const id of youtubeIds) {
+				try {
+					await ytdl.getDashMPD(id, quality);
 				}
+				catch (error) {
+					pino.warn(`[VideoQueue] Could not prepare DASH stream for ${id}: ${error.message}`);
+				}
+			}
+			return;
+		}
+
+		for (const id of youtubeIds) {
+			if (!DownloadManager.isDownloaded(id) && !DownloadManager.activeDownloads.has(id)) {
+				pino.info(`[VideoQueue] Downloading ahead: ${id}`);
+				await DownloadManager.downloadVideo(id, quality);
 			}
 		}
 	}
