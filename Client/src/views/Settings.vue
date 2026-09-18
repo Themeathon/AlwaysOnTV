@@ -41,10 +41,20 @@
 							class="mb-2"
 						/>
 						<v-select
+							v-model="youtubePlaybackMode"
+							:items="playbackModeOptions"
+							item-title="name"
+							item-value="mode"
+							persistent-hint
+							hint="Streaming starts instantly; downloading fetches videos to disk before they play"
+							label="YouTube Playback"
+							class="mb-2"
+						/>
+						<v-select
 							v-model="prefetchQueueAmount"
 							:items="prefetchOptions"
 							persistent-hint
-							hint="How many upcoming videos to pre-download in advance"
+							:hint="youtubePlaybackMode === 'download' ? 'How many upcoming videos to pre-download in advance' : 'How many upcoming videos to prepare streams for in advance'"
 							label="Queue Caching Look-Ahead Amount"
 						/>
 					</v-card-text>
@@ -210,6 +220,7 @@ const useRandomPlaylist = ref(false);
 const useEntireRandomPlaylist = ref(false);
 const selectedVideoQuality = ref(null);
 const prefetchQueueAmount = ref(1);
+const youtubePlaybackMode = ref('stream');
 const twitchEnabled = ref(false);
 const streamingTitle = ref('');
 const clientID = ref('');
@@ -229,6 +240,11 @@ const videoQualityOptions = [
 	{ quality: 2160, name: '2160p' },
 ];
 
+const playbackModeOptions = [
+	{ mode: 'stream', name: 'Stream (DASH)' },
+	{ mode: 'download', name: 'Download first' },
+];
+
 const prefetchOptions = Array.from({ length: 10 }, (v, i) => i + 1);
 
 const canAuthenticate = computed(() => !!clientID.value && !!clientSecret.value);
@@ -245,6 +261,7 @@ const canSave = computed(() => {
       useEntireRandomPlaylist.value !== settingsData.value?.use_entire_random_playlist ||
       selectedVideoQuality.value !== settingsData.value?.max_video_quality ||
       prefetchQueueAmount.value !== settingsData.value?.prefetch_queue_amount ||
+      youtubePlaybackMode.value !== (settingsData.value?.youtube_playback_mode ?? 'stream') ||
       !_.isEqual(currentPaths.sort(), originalPaths.sort());
 });
 
@@ -268,6 +285,7 @@ const getSettings = async () => {
 		useEntireRandomPlaylist.value = settingsData.value.use_entire_random_playlist ?? false;
 		selectedVideoQuality.value = videoQualityOptions.find(q => q.quality === settingsData.value.max_video_quality)?.quality || 1080;
 		prefetchQueueAmount.value = settingsData.value.prefetch_queue_amount ?? 1;
+		youtubePlaybackMode.value = settingsData.value.youtube_playback_mode ?? 'stream';
 
 		const loadedPaths = settingsData.value.local_media?.base_paths || [];
 		localBasePaths.value = loadedPaths.length > 0 ? [...loadedPaths] : [''];
@@ -354,6 +372,7 @@ const saveSettings = async () => {
 				use_entire_random_playlist: useEntireRandomPlaylist.value,
 				max_video_quality: selectedVideoQuality.value,
 				prefetch_queue_amount: prefetchQueueAmount.value,
+				youtube_playback_mode: youtubePlaybackMode.value,
 				local_base_paths: pathsToSave,
 			},
 		}).json();

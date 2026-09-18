@@ -1,12 +1,11 @@
-import URL from 'node:url';
+import { URL } from 'node:url';
 
-import ytDashManifestGenerator from '@freetube/yt-dash-manifest-generator';
 import NodeCache from 'node-cache';
 import { Duration } from 'luxon';
 import { Innertube, UniversalCache } from 'youtubei.js';
-import { ServerConfig } from '#utils/Config.js';
 import pino from '#utils/Pino.js';
 
+import { buildManifest, probeRanges } from '#utils/ytdl/DashManifest.js';
 import YTDlpParser from '#utils/ytdl/YTDlpParser.js';
 
 let ytClient;
@@ -15,6 +14,8 @@ export default class YTDL {
 	static {
 		this.info_cache = new NodeCache({ stdTTL: 60 * 60 * 3 }); // 3 hours 
 		this.stream_cache = new NodeCache({ stdTTL: 60 * 60 * 3 }); // 3 hours 
+		this.manifest_cache = new NodeCache({ stdTTL: 60 * 60 * 3 }); // 3 hours 
+		this.pending_streams = new Map();
 
 		this.parser = new YTDlpParser();
 	}
@@ -161,94 +162,75 @@ export default class YTDL {
 		if (this.stream_cache.has(id) && !force)
 			return this.stream_cache.get(id);
 
-		const { error, audioFormats, videoFormats, duration } = await this.parser.getVideoAndAudioStreams(id);
-		if (error) {
-			throw error;
-		}
+		if (!force && this.pending_streams.has(id))
+			return this.pending_streams.get(id);
 
-		const result = {
-			audioFormats,
-			videoFormats,
-			duration,
-		};
+		const promise = this.parser.getVideoAndAudioStreams(id)
+			.then(({ error, audioFormats, videoFormats, duration }) => {
+				if (error) throw new Error(error);
 
-		this.stream_cache.set(id, result);
-		return result;
+				const result = { audioFormats, videoFormats, duration };
+				this.stream_cache.set(id, result);
+				return result;
+			})
+			.finally(() => this.pending_streams.delete(id));
+
+		this.pending_streams.set(id, promise);
+		return promise;
 	}
 
-	static async getBestVideoAndAudio(youtubeID, videoQuality = 1080, force = false) {
-		const id = this.extractID(youtubeID);
-		const { audioFormats, videoFormats, duration, error } = await this.getCachedVideoAndAudioStreams(id, force);
-
-		if (error || !videoFormats?.length || !audioFormats?.length) {
-			return {
-				error: error || 'NO_VIDEO_OR_AUDIO',
-				message: 'No video or audio formats found.',
-			};
-		}
-
-		const bestVideo = videoFormats
-			.filter(format => format.height <= videoQuality && !format.qualityLabel?.endsWith('s'))
-			.sort((a, b) => b.height - a.height)[0] || videoFormats[0];
-
-		const bestAudio = audioFormats
-			.sort((a, b) => (b.audioBitrate || 0) - (a.audioBitrate || 0))[0] || audioFormats[0];
-
-		return {
-			video: bestVideo,
-			audio: bestAudio,
-			duration,
+	static getBestVideoAndAudio({ videoFormats, audioFormats }, videoQuality = 1080) {
+		const quality = format => Math.min(format.width || 0, format.height || 0);
+		const codecRank = format => {
+			if (format.vcodec.startsWith('avc1')) return 3;
+			if (format.vcodec.startsWith('vp9') || format.vcodec.startsWith('vp09')) return 2;
+			return 1;
 		};
+
+		const byQuality = (a, b) => quality(b) - quality(a)
+			|| (b.fps || 0) - (a.fps || 0)
+			|| codecRank(b) - codecRank(a)
+			|| (b.tbr || 0) - (a.tbr || 0);
+
+		const sortedVideo = [...videoFormats].sort(byQuality);
+		const video = sortedVideo.find(format => quality(format) <= videoQuality) || sortedVideo.at(-1);
+
+		const audio = [...audioFormats].sort((a, b) =>
+			(b.language_preference ?? -1) - (a.language_preference ?? -1)
+			|| (b.abr || 0) - (a.abr || 0),
+		)[0];
+
+		return { video, audio };
 	}
 
 	static async getDashMPD(youtubeID, videoQuality = 1080) {
 		const id = this.extractID(youtubeID);
-		
-		try {
-			const { video, audio, duration, error } = await this.getBestVideoAndAudio(id, videoQuality);
+		const cacheKey = `${id}:${videoQuality}`;
 
-			if (error === 'NO_VIDEO_OR_AUDIO' || !video || !audio) {
-				return await this.getProgressiveStreamFallback(id);
-			}
+		if (this.manifest_cache.has(cacheKey))
+			return this.manifest_cache.get(cacheKey);
 
-			const api_url = ServerConfig.api_url;
-			video.url = `${api_url}/youtube/${id}/video?videoQuality=${videoQuality}`;
-			audio.url = `${api_url}/youtube/${id}/audio?videoQuality=${videoQuality}`;
+		const streams = await this.getCachedVideoAndAudioStreams(id);
+		const { video, audio } = this.getBestVideoAndAudio(streams, videoQuality);
 
-			return ytDashManifestGenerator.generate_dash_file_from_formats([video, audio], duration);
-		} catch {
-			return await this.getProgressiveStreamFallback(id);
-		}
+		pino.info(`[YTDL] DASH for ${id}: video ${video.format_id} (${video.width}x${video.height} ${video.vcodec}), audio ${audio.format_id} (${audio.acodec})`);
+
+		const [videoRanges, audioRanges] = await Promise.all([
+			probeRanges(video),
+			probeRanges(audio),
+		]);
+
+		const mpd = buildManifest([
+			{ format: video, ranges: videoRanges, baseUrl: `${id}/${video.format_id}` },
+			{ format: audio, ranges: audioRanges, baseUrl: `${id}/${audio.format_id}` },
+		], streams.duration);
+
+		this.manifest_cache.set(cacheKey, mpd);
+		return mpd;
 	}
 
-	static async getProgressiveStreamFallback(id) {
-		try {
-			await this.initYT();
-			// FIX: Swapped getInfo for getBasicInfo here to guard the progressive fallback logic
-			const info = await ytClient.getBasicInfo(id);
-			
-			let formats = info.formats || [];
-			if (!formats.length) {
-				formats = info.streaming_data?.formats || info.streaming_data?.progressiveFormats || [];
-			}
-			
-			const format = formats.sort((a, b) => {
-				const heightB = b.height || b.raw_data?.height || 0;
-				const heightA = a.height || a.raw_data?.height || 0;
-				return heightB - heightA;
-			})[0];
-			
-			let url = format?.url;
-			if (!url && typeof format?.decipher === 'function') {
-				url = await format.decipher(ytClient.session.player);
-			}
-			if (url) {
-				return { directUrl: url };
-			}
-		} catch {
-			return { error: 'NO_VIDEO_OR_AUDIO' };
-		}
-
-		return { error: 'NO_VIDEO_OR_AUDIO' };
+	static async getStreamFormat(youtubeID, formatId, force = false) {
+		const { videoFormats, audioFormats } = await this.getCachedVideoAndAudioStreams(youtubeID, force);
+		return [...videoFormats, ...audioFormats].find(format => format.format_id === formatId);
 	}
 }

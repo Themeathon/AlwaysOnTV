@@ -169,35 +169,21 @@ const playVideo = async () => {
 			videoElement.src = streamUrl;
 			setupPlyrForLocal(videoElement);
 
-        } else if (currentVideo.value.source_type === 'youtube' && currentVideo.value.id) {
-            const api_url = import.meta.env.VITE_API_URL || 'http://localhost:8085';
-            const videoQuality = currentVideo.value.videoQuality || 1080;
+		} else if (currentVideo.value.source_type === 'youtube' && currentVideo.value.id) {
+			const videoQuality = currentVideo.value.video_quality || 1080;
+			const source = await ky.get('youtube/get-source', {
+				searchParams: { videoId: currentVideo.value.id, videoQuality },
+			}).json();
 
-            videoLoading.value = true;
-
-            try {
-                // Fetch our stream data orchestrator payload
-                const response = await fetch(`${api_url}api/youtube/get-mpd?videoId=${currentVideo.value.id}&videoQuality=${videoQuality}`);
-                const data = await response.json();
-
-                if (data && data.directUrl) {
-                    console.log(`PlayVideo: Running pipeline [Mode: ${data.status}]. Target source:`, data.directUrl);
-                    
-                    isPlayingLocal.value = true;
-                    videoElement.removeAttribute('src');
-                    videoElement.src = data.directUrl;
-                    
-                    setupPlyrForLocal(videoElement);
-                } else {
-                    throw new Error("Invalid payload format returned from get-mpd route.");
-                }
-
-            } catch (error) {
-                console.error("Failed handling YouTube play path:", error);
-                videoLoading.value = false;
-                fetchVideo(true);
-            }
-        }
+			if (source.type === 'file') {
+				isPlayingLocal.value = true;
+				videoElement.src = `${API_URL}api/${source.path}`;
+				setupPlyrForLocal(videoElement);
+			} else {
+				isPlayingLocal.value = false;
+				await setupDashPlayer(videoElement, `${API_URL}api/${source.path}`);
+			}
+		}
 
 	} catch (error) {
 		console.error('Error during playVideo execution:', error);

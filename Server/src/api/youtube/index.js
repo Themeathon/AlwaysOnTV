@@ -3,6 +3,7 @@ import checkPassword from '../PasswordMiddleware.js';
 import GetMPDFromYouTube from './GetMPDFromYouTube.js';
 import GetPlaylistFromYouTube from './GetPlaylistFromYouTube.js';
 import GetProxiedStreamType from './GetProxiedStreamType.js';
+import GetSourceFromYouTube from './GetSourceFromYouTube.js';
 import GetVideoFromYouTube from './GetVideoFromYouTube.js';
 
 class YouTubeRouter extends AbstractRouter {
@@ -16,8 +17,9 @@ class YouTubeRouter extends AbstractRouter {
 		router.post('/get-video', checkPassword, ...GetVideoFromYouTube);
 		router.post('/get-playlist', checkPassword, ...GetPlaylistFromYouTube);
 
+		router.get('/get-source', ...GetSourceFromYouTube);
 		router.get('/get-mpd', ...GetMPDFromYouTube);
-		router.get('/:videoId/:streamType', ...GetProxiedStreamType);
+		router.get('/:videoId/:formatId', ...GetProxiedStreamType);
 	}
 }
 
