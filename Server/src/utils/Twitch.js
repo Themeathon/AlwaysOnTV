@@ -5,6 +5,8 @@ import { TwitchConfig } from '#utils/Config.js';
 import Utils from '#utils/index.js';
 import pino from '#utils/Pino.js';
 
+export const TWITCH_CREDENTIALS_MISSING = 'Searching and adding games requires the Twitch integration. Set your Twitch Client ID and Client Secret in Settings.';
+
 class Twitch {
 	async getTwitchInfo (access_token) {
 		try {
@@ -34,6 +36,10 @@ class Twitch {
 
 	getClientID () {
 		return TwitchConfig.clientID;
+	}
+
+	hasAppCredentials () {
+		return Boolean(TwitchConfig.clientID && TwitchConfig.clientSecret);
 	}
 
 	async updateTwitchData (access_token, refresh_token, expires_in) {
@@ -103,6 +109,9 @@ class Twitch {
 		)
 			return TwitchConfig.appAccessToken;
 
+		if (!this.hasAppCredentials())
+			throw new Error(TWITCH_CREDENTIALS_MISSING);
+
 		pino.info('Renewing app access token because it expired...');
 
 		try {
@@ -167,7 +176,7 @@ class Twitch {
 	async getGameByIGDBID (igdb_id) {
 		try {
 			const client_id = this.getClientID();
-			const access_token = await this.getAccessToken();
+			const access_token = await this.getAppAccessToken();
 
 			const searchObject = {
 				igdb_id,

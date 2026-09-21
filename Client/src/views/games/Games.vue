@@ -283,10 +283,23 @@
 				<span class="text-h5">Add a new game</span>
 			</v-card-title>
 			<v-card-text>
+				<v-row
+					v-if="!twitchConfigured"
+					class="mb-4"
+				>
+					<v-alert
+						type="warning"
+						variant="tonal"
+					>
+						Searching and adding games requires the Twitch integration.
+						Set your Twitch Client ID and Client Secret in
+						<router-link to="/settings">Settings</router-link>.
+					</v-alert>
+				</v-row>
 				<v-row>
 					<v-text-field
 						v-model="searchInput"
-						:disabled="isLoading"
+						:disabled="isLoading || !twitchConfigured"
 						:loading="isLoading"
 						:error-messages="searchErrorMessages"
 						label="Search by Name or ID"
@@ -589,7 +602,20 @@ const fetchGames = async () => {
 
 onMounted(fetchGames);
 
+const twitchConfigured = ref(true);
+
+const checkTwitchConfigured = async () => {
+	try {
+		const settings = await ky.get('settings').json();
+		twitchConfigured.value = Boolean(settings.twitch?.client_id && settings.twitch?.client_secret);
+	}
+	catch {
+		twitchConfigured.value = true;
+	}
+};
+
 const openCreateGameDialog = () => {
+	checkTwitchConfigured();
 	searchedGames.value = [];
 	searchInput.value = '';
 	createGameDialog.value = true;
