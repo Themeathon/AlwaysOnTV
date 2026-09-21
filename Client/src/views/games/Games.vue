@@ -437,9 +437,10 @@ import {useDisplay} from 'vuetify';
 
 import placeholderImage from '@/assets/placeholder-500x700.jpg';
 import SelectVideoDialog from '@/composables/SelectVideoDialog.vue';
-import snackbarText from 'lodash/seq';
 
 const createGameDialog = ref(false);
+const snackbar = ref(false);
+const snackbarText = ref('');
 const games = ref([]);
 const searchedGames = ref([]);
 const searchErrorMessages = ref('');
