@@ -1,7 +1,7 @@
 import Joi from 'joi';
 
 import AbstractEndpoint from '../AbstractEndpoint.js';
-import Twitch from '#utils/Twitch.js';
+import Twitch, { TWITCH_CREDENTIALS_MISSING } from '#utils/Twitch.js';
 
 class SearchGamesOnIGDB extends AbstractEndpoint {
 	setup () {
@@ -18,6 +18,9 @@ class SearchGamesOnIGDB extends AbstractEndpoint {
 	}
 
 	async searchGamesOnIGDB (ctx, next) {
+		if (!Twitch.hasAppCredentials())
+			return super.error(ctx, TWITCH_CREDENTIALS_MISSING, 412);
+
 		try {
 			const { name, offset } = ctx.request.body;
 
