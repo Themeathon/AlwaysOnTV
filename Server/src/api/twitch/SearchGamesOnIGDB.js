@@ -38,7 +38,7 @@ class SearchGamesOnIGDB extends AbstractEndpoint {
 							url: thumbnailUrl,
 						},
 						external_games: [
-							{ category: 14, uid: twitchGame.id },
+							{ external_game_source: 14, uid: twitchGame.id },
 						],
 					};
 				});

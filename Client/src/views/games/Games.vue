@@ -560,7 +560,7 @@ const checkboxBasedSearchedGames = computed(() => {
 });
 
 const findTwitchGameID = igdbGame => {
-	return igdbGame.external_games?.find(external => external.category === 14)?.uid;
+	return igdbGame.external_games?.find(external => external.external_game_source === 14)?.uid;
 };
 
 const deleteDialog = ref(false);

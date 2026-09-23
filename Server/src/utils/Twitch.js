@@ -7,6 +7,8 @@ import pino from '#utils/Pino.js';
 
 export const TWITCH_CREDENTIALS_MISSING = 'Searching and adding games requires the Twitch integration. Set your Twitch Client ID and Client Secret in Settings.';
 
+const TWITCH_SOURCE = 14;
+
 class Twitch {
 	async getTwitchInfo (access_token) {
 		try {
@@ -153,8 +155,9 @@ class Twitch {
 			const access_token = await this.getAppAccessToken();
 
 			// external_games.uid is the ID on the specific service (GiantBomb, YouTube, Twitch, etc.)
-			// external_games.category is the service (14 = Twitch)
-			const body = `fields id, name, cover.url, external_games.uid, external_games.category; limit 500; offset ${offset}; search "${name}";`;
+			// external_games.external_game_source is the service (14 = Twitch)
+			const query = name.replace(/["\\]/g, '\\$&');
+			const body = `fields id, name, cover.url, external_games.uid, external_games.external_game_source; limit 500; offset ${offset}; search "${query}";`;
 
 			const result = await Utils.postAsJSON('https://api.igdb.com/v4/games', {
 				headers: {
@@ -164,7 +167,17 @@ class Twitch {
 				body,
 			});
 
-			return result.filter(game => game.external_games?.some(external => external.category === 14));
+			const byTwitchID = new Map();
+			for (const game of result) {
+				const twitchID = game.external_games?.find(external => external.external_game_source === TWITCH_SOURCE)?.uid;
+				if (!twitchID) continue;
+
+				const existing = byTwitchID.get(twitchID);
+				if (!existing || (!existing.cover && game.cover))
+					byTwitchID.set(twitchID, game);
+			}
+
+			return [...byTwitchID.values()];
 		}
 		catch (error) {
 			pino.error('Error in Twitch.searchGamesOnIGDB');
