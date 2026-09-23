@@ -135,6 +135,23 @@
 							hide-details
 							hint="If you want to use the video title in your streaming title use this: {{videoTitle}}"
 						/>
+						<template v-if="!twitchConfigured">
+							<div class="text-caption my-2">
+								Create an application in the Twitch Developer Console to get a Client ID and Client Secret.
+								Set its OAuth Redirect URL to <code>{{ twitchCallbackURL }}</code>.
+							</div>
+							<v-btn
+								color="purple"
+								variant="text"
+								prepend-icon="mdi-open-in-new"
+								href="https://dev.twitch.tv/console/apps"
+								target="_blank"
+								rel="noopener"
+								class="mb-2"
+							>
+								Open Twitch Developer Console
+							</v-btn>
+						</template>
 						<v-text-field
 							v-model="clientID"
 							:disabled="!twitchEnabled"
@@ -246,6 +263,13 @@ const playbackModeOptions = [
 ];
 
 const prefetchOptions = Array.from({ length: 10 }, (v, i) => i + 1);
+
+const twitchCallbackURL = new URL('auth/connect/twitch/callback', new URL(API_URL, window.location.href)).href;
+
+const twitchConfigured = computed(() => {
+	const twitch = settingsData.value?.twitch;
+	return Boolean(twitch?.enabled && twitch?.client_id && twitch?.client_secret);
+});
 
 const canAuthenticate = computed(() => !!clientID.value && !!clientSecret.value);
 
