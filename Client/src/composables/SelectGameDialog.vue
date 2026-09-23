@@ -318,7 +318,7 @@ const searchForGameOnTwitch = _.debounce(async () => {
 }, 500);
 
 const findTwitchGameID = igdbGame => {
-	return igdbGame.external_games?.find(external => external.category === 14)?.uid;
+	return igdbGame.external_games?.find(external => external.external_game_source === 14)?.uid;
 };
 
 const addNewGame = async (igdbGame) => {
