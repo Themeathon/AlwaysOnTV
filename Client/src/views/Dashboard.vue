@@ -16,53 +16,51 @@
 					>
 						<div class="d-flex flex-column h-100">
 							<div class="my-4">
-								<div class="d-flex align-center mr-4">
+								<div class="d-flex align-center flex-wrap mr-4">
 									<v-card-title class="text-h3 mb-4">
 										Queue
 									</v-card-title>
 
 									<v-spacer />
 
-									<v-btn
-										class="mx-2"
-										color="blue"
-										variant="outlined"
-										prepend-icon="mdi-plus"
-										@click="openSelectVideoDialog"
-									>
-										Video
-									</v-btn>
+									<div class="d-flex flex-wrap justify-end ga-2 ml-4 mb-4">
+										<v-btn
+											color="blue"
+											variant="outlined"
+											prepend-icon="mdi-plus"
+											@click="openSelectVideoDialog"
+										>
+											Video
+										</v-btn>
 
-									<v-btn
-										class="mx-2"
-										color="blue"
-										variant="outlined"
-										prepend-icon="mdi-plus"
-										@click="openSelectPlaylistDialog"
-									>
-										Playlist
-									</v-btn>
+										<v-btn
+											color="blue"
+											variant="outlined"
+											prepend-icon="mdi-plus"
+											@click="openSelectPlaylistDialog"
+										>
+											Playlist
+										</v-btn>
 
-									<v-btn
-										class="mx-2"
-										color="green"
-										variant="outlined"
-										prepend-icon="mdi-plus"
-										@click="openAddRandomVideosDialog"
-									>
-										Random Videos
-									</v-btn>
+										<v-btn
+											color="green"
+											variant="outlined"
+											prepend-icon="mdi-plus"
+											@click="openAddRandomVideosDialog"
+										>
+											Random Videos
+										</v-btn>
 
-									<v-btn
-										class="mx-2"
-										color="red"
-										variant="outlined"
-										prepend-icon="mdi-delete"
-										:disabled="isQueueEmpty"
-										@click="deleteDialog = true"
-									>
-										Clear
-									</v-btn>
+										<v-btn
+											color="red"
+											variant="outlined"
+											prepend-icon="mdi-delete"
+											:disabled="isQueueEmpty"
+											@click="deleteDialog = true"
+										>
+											Clear
+										</v-btn>
+									</div>
 								</div>
 
 								<v-card-subtitle v-if="isQueueEmpty">
