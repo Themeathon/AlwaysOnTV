@@ -177,6 +177,7 @@
 							<v-card-text
 								style="position: relative; height:100%;"
 								class="pa-2"
+								:class="{ 'list-area': !isQueueEmpty }"
 							>
 								<v-virtual-scroll
 									style="position: absolute; left: 0; right: 0; top: 0; bottom: 0;"
@@ -238,6 +239,7 @@
 
 							<v-card-text
 								style="position: relative; height:100%;"
+								:class="{ 'list-area': !isHistoryEmpty }"
 							>
 								<v-virtual-scroll
 									style="position: absolute; left: 0; right: 0; top: 0; bottom: 0;"
@@ -937,6 +939,10 @@ const addNewPlaylistToQueue = async () => {
 </script>
 
 <style scoped>
+.list-area {
+	min-height: 400px;
+}
+
 .v-card-title span {
 	white-space: nowrap;
 	overflow: hidden;
