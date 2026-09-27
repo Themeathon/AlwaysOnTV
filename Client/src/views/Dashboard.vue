@@ -270,6 +270,7 @@
 												/>
 
 												<v-btn
+													v-if="item.source_type !== 'local'"
 													icon="mdi-youtube"
 													size="x-small"
 													variant="tonal"

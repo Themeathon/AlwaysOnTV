@@ -79,6 +79,7 @@
 										class="mr-5 my-2"
 									/>
 									<v-btn
+										v-if="item.source_type !== 'local'"
 										icon="mdi-youtube"
 										size="x-small"
 										variant="tonal"
