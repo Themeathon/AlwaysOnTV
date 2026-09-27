@@ -6,27 +6,37 @@
 			'drag-source': isDragSource,
 			'drag-target': isDragTarget
 		}"
-		draggable="true"
+		:draggable="!compact"
 		@dragstart="onDragStart"
 		@dragenter.prevent="onDragEnter"
 		@dragover.prevent
 		@dragend="onDragEnd"
 		@drop="onDrop"
 	>
-		<v-list-item-title class="text-wrap">
+		<v-list-item-title
+			class="text-wrap"
+			:class="{ 'title-clamp': compact }"
+		>
 			{{ item.title }}
 		</v-list-item-title>
 
-		<v-list-item-subtitle>
-			<strong>Game:</strong> {{ item.game?.title || item.gameId }}
+		<v-list-item-subtitle v-if="compact">
+			{{ item.game?.title || item.gameId }} · {{ formatVideoLength(item.length) }}
 		</v-list-item-subtitle>
 
-		<v-list-item-subtitle>
-			<strong>Length:</strong> {{ formatVideoLength(item.length) }}
-		</v-list-item-subtitle>
+		<template v-else>
+			<v-list-item-subtitle>
+				<strong>Game:</strong> {{ item.game?.title || item.gameId }}
+			</v-list-item-subtitle>
+
+			<v-list-item-subtitle>
+				<strong>Length:</strong> {{ formatVideoLength(item.length) }}
+			</v-list-item-subtitle>
+		</template>
 
 		<template #prepend>
 			<v-icon
+				v-if="!compact"
 				class="mr-4 cursor-grab"
 				color="grey-darken-1"
 			>
@@ -34,13 +44,15 @@
 			</v-icon>
 
 			<span
-				class="mr-5 text-center font-weight-bold"
+				class="text-center font-weight-bold"
+				:class="compact ? 'mr-2' : 'mr-5'"
 				style="min-width: 20px;"
 			>
 				{{ index + 1 }}
 			</span>
 
 			<v-btn
+				v-if="!compact"
 				icon="mdi-file-edit"
 				size="x-small"
 				variant="tonal"
@@ -61,13 +73,14 @@
 				:src="item.thumbnail_url"
 				:lazy-src="placeholderImage"
 				:aspect-ratio="16/9"
-				width="125"
+				:width="compact ? 72 : 125"
 				cover
-				class="mr-5 rounded"
+				class="rounded"
+				:class="compact ? 'mr-3' : 'mr-5'"
 			/>
 
 			<v-btn
-				v-bind="props"
+				v-if="!compact"
 				icon="mdi-youtube"
 				size="x-small"
 				variant="tonal"
@@ -87,7 +100,57 @@
 			</v-btn>
 		</template>
 
-		<template #append>
+		<template
+			v-if="compact"
+			#append
+		>
+			<v-menu location="bottom end">
+				<template #activator="{ props: menuProps }">
+					<v-btn
+						v-bind="menuProps"
+						icon="mdi-dots-vertical"
+						size="small"
+						variant="text"
+						:loading="isLoading"
+					/>
+				</template>
+
+				<v-list density="compact">
+					<v-list-item
+						prepend-icon="mdi-file-edit"
+						title="Edit Position"
+						@click="openEditPos(index)"
+					/>
+					<v-list-item
+						prepend-icon="mdi-arrow-collapse-up"
+						title="Move To Top"
+						@click="editPosStart(index)"
+					/>
+					<v-list-item
+						prepend-icon="mdi-arrow-collapse-down"
+						title="Move To Bottom"
+						@click="editPosEnd(index)"
+					/>
+					<v-list-item
+						prepend-icon="mdi-youtube"
+						title="Watch On YouTube"
+						:href="'https://youtu.be/' + item.id"
+						target="_blank"
+					/>
+					<v-list-item
+						prepend-icon="mdi-trash-can"
+						title="Delete From Queue"
+						base-color="red"
+						@click="deleteFromQueue(index)"
+					/>
+				</v-list>
+			</v-menu>
+		</template>
+
+		<template
+			v-else
+			#append
+		>
 			<v-btn
 				icon="mdi-trash-can"
 				size="x-small"
@@ -149,8 +212,11 @@
 <script setup>
 import placeholderImage from '@/assets/placeholder-500x700.jpg';
 import { Duration } from 'luxon';
+import { useDisplay } from 'vuetify';
 
 const props = defineProps(['item', 'index', 'isLoading', 'isDragSource', 'isDragTarget']);
+
+const { xs: compact } = useDisplay();
 
 const emit = defineEmits([
 	'openEditPos', 'deleteFromQueue', 'editPosStart', 'editPosEnd',
@@ -198,6 +264,13 @@ const formatVideoLength = length => {
 </script>
 
 <style scoped>
+.title-clamp {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
 .cursor-grab {
 	cursor: grab;
 }
