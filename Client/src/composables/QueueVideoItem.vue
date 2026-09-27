@@ -80,7 +80,7 @@
 			/>
 
 			<v-btn
-				v-if="!compact"
+				v-if="!compact && item.source_type !== 'local'"
 				icon="mdi-youtube"
 				size="x-small"
 				variant="tonal"
@@ -132,6 +132,7 @@
 						@click="editPosEnd(index)"
 					/>
 					<v-list-item
+						v-if="item.source_type !== 'local'"
 						prepend-icon="mdi-youtube"
 						title="Watch On YouTube"
 						:href="'https://youtu.be/' + item.id"
