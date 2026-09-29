@@ -73,7 +73,7 @@
 						<v-row
 							v-for="(path, index) in localBasePaths"
 							:key="index"
-							dense
+							density="compact"
 							align="center"
 						>
 							<v-col cols="10">
@@ -97,7 +97,7 @@
 								/>
 							</v-col>
 						</v-row>
-						<v-row dense>
+						<v-row density="compact">
 							<v-col class="d-flex justify-center">
 								<v-btn
 									icon="mdi-plus"
