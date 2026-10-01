@@ -5,10 +5,17 @@ import { Duration } from 'luxon';
 import { Innertube, UniversalCache } from 'youtubei.js';
 import pino from '#utils/Pino.js';
 
+import { getCookieHeader } from '#utils/ytdl/Cookies.js';
+
 import { buildManifest, probeRanges } from '#utils/ytdl/DashManifest.js';
 import YTDlpParser from '#utils/ytdl/YTDlpParser.js';
 
+const ERROR_MESSAGES = {
+	YOUTUBE_BOT_CHECK: 'YouTube asked to confirm this server is not a bot. Add YouTube cookies as Server/cookies.txt (see README).',
+};
+
 let ytClient;
+let ytClientCookie;
 
 export default class YTDL {
 	static {
@@ -44,11 +51,15 @@ export default class YTDL {
 	}
 
 	static async initYT() {
-		if (!ytClient) {
-            ytClient = await Innertube.create({ 
-                cache: new UniversalCache(false)
-            });
-        }
+		const cookie = getCookieHeader('https://www.youtube.com/');
+
+		if (!ytClient || cookie !== ytClientCookie) {
+			ytClient = await Innertube.create({
+				cache: new UniversalCache(false),
+				cookie: cookie || undefined,
+			});
+			ytClientCookie = cookie;
+		}
 	}
 
 	static async getVideoInfo(youtubeID, force = false) {
@@ -66,7 +77,7 @@ export default class YTDL {
 		const playStatus = info.playability_status || info.playabilityStatus || {};
 		const thumbnails = basicInfo.thumbnail || basicInfo.thumbnails || [];
 
-		const mappedInfo = {
+		let mappedInfo = {
 			videoDetails: {
 				videoId: basicInfo.id,
 				title: basicInfo.title,
@@ -75,6 +86,21 @@ export default class YTDL {
 				age_restricted: playStatus.status === 'LOGIN_REQUIRED' || basicInfo.is_unplayable || basicInfo.isUnplayable
 			}
 		};
+
+		if (!basicInfo.title) {
+			pino.warn(`[YTDL] youtubei.js returned no details for ${id} (${playStatus.status}: ${playStatus.reason}), falling back to yt-dlp`);
+
+			const { duration, details } = await this.getCachedVideoAndAudioStreams(id, force);
+			mappedInfo = {
+				videoDetails: {
+					videoId: id,
+					title: details.title,
+					thumbnails: [...details.thumbnails],
+					lengthSeconds: duration,
+					age_restricted: details.age_limit >= 18,
+				},
+			};
+		}
 
 		this.info_cache.set(id, mappedInfo);
 		return mappedInfo;
@@ -166,10 +192,10 @@ export default class YTDL {
 			return this.pending_streams.get(id);
 
 		const promise = this.parser.getVideoAndAudioStreams(id)
-			.then(({ error, audioFormats, videoFormats, duration }) => {
-				if (error) throw new Error(error);
+			.then(({ error, audioFormats, videoFormats, duration, details }) => {
+				if (error) throw new Error(ERROR_MESSAGES[error] || error);
 
-				const result = { audioFormats, videoFormats, duration };
+				const result = { audioFormats, videoFormats, duration, details };
 				this.stream_cache.set(id, result);
 				return result;
 			})
