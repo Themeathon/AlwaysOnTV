@@ -1,12 +1,10 @@
 import AbstractParser from '#utils/ytdl/AbstractParser.js';
 
 import { execFile } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-import process from 'node:process';
 import util from 'node:util';
 
 import pino from '#utils/Pino.js';
+import { COOKIES_PATH, hasCookies } from '#utils/ytdl/Cookies.js';
 
 const execFilePromise = util.promisify(execFile);
 
@@ -50,9 +48,8 @@ export default class YTDlpParser extends AbstractParser {
 
 			const args = ['-J', '--no-warnings'];
 
-			const cookiesPath = path.resolve(process.cwd(), 'cookies.txt');
-			if (fs.existsSync(cookiesPath)) {
-				args.push('--cookies', cookiesPath);
+			if (hasCookies()) {
+				args.push('--cookies', COOKIES_PATH);
 			}
 
 			args.push(`https://www.youtube.com/watch?v=${youtubeID}`);
@@ -82,10 +79,21 @@ export default class YTDlpParser extends AbstractParser {
 				videoFormats,
 				audioFormats,
 				duration: data.duration || 0,
+				details: {
+					title: data.title,
+					thumbnails: (data.thumbnails || []).filter(t => t.url),
+					age_limit: data.age_limit || 0,
+				},
 			};
 		}
 		catch (error) {
 			pino.error(`[YTDlpParser] yt-dlp failed for ${youtubeID}: ${error.message}`);
+
+			if (/confirm you.?re not a bot/i.test(error.stderr || error.message)) {
+				pino.warn(`[YTDlpParser] YouTube bot check hit. ${hasCookies() ? `Cookies in ${COOKIES_PATH} were rejected or expired, export fresh ones.` : `Export YouTube cookies to ${COOKIES_PATH}.`}`);
+				return { error: 'YOUTUBE_BOT_CHECK' };
+			}
+
 			return { error: 'YTDLP_EXECUTION_FAILED' };
 		}
 	}

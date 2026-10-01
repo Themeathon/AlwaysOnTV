@@ -1,11 +1,11 @@
 import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import util from 'node:util';
 
 import pino from '#utils/Pino.js';
+import { COOKIES_PATH, hasCookies } from '#utils/ytdl/Cookies.js';
 
 const execPromise = util.promisify(exec);
 
@@ -76,8 +76,7 @@ class DownloadManager {
 
 		try {
 			const url = `https://www.youtube.com/watch?v=${videoId}`;
-			const cookiesPath = path.resolve(process.cwd(), 'cookies.txt');
-			const cookieFlag = fs.existsSync(cookiesPath) ? `--cookies "${cookiesPath}"` : '';
+			const cookieFlag = hasCookies() ? `--cookies "${COOKIES_PATH}"` : '';
 			
 			const outputTemplate = path.join(cacheDir, videoId);
 			const command = `yt-dlp -f "bestvideo[height<=${quality}]+bestaudio/best/best" --merge-output-format mp4 ${cookieFlag} --no-warnings -o "${outputTemplate}.%(ext)s" "${url}"`;

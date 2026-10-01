@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 
 import got from 'got';
+import { withCookies } from '#utils/ytdl/Cookies.js';
 
 const PROBE_BYTES = 256 * 1024;
 
@@ -83,10 +84,10 @@ function parseMp4 (buf) {
 
 export async function probeRanges (format) {
 	const body = await got(format.url, {
-		headers: {
+		headers: withCookies({
 			...format.http_headers,
 			range: `bytes=0-${PROBE_BYTES - 1}`,
-		},
+		}, format.url),
 	}).buffer();
 	const buf = Buffer.from(body.buffer, body.byteOffset, body.byteLength);
 

@@ -3,6 +3,7 @@ import got from 'got';
 import AbstractEndpoint from '../AbstractEndpoint.js';
 import YTDL from '#utils/ytdl/index.js';
 import pino from '#utils/Pino.js';
+import { withCookies } from '#utils/ytdl/Cookies.js';
 
 const FORWARDED_HEADERS = ['content-type', 'content-length', 'content-range', 'accept-ranges'];
 
@@ -15,7 +16,7 @@ class GetProxiedStreamType extends AbstractEndpoint {
 		const format = await YTDL.getStreamFormat(videoId, formatId, force);
 		if (!format) return null;
 
-		const headers = { ...format.http_headers };
+		const headers = withCookies({ ...format.http_headers }, format.url);
 		if (range) headers.range = range;
 
 		const stream = got.stream(format.url, {
