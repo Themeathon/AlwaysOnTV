@@ -50,6 +50,30 @@
 							label="YouTube Playback"
 							class="mb-2"
 						/>
+						<v-alert
+							v-if="youtubePlaybackMode === 'stream' && !settingsData.youtube_cookies"
+							color="error"
+							variant="outlined"
+							:icon="false"
+							class="mb-4"
+						>
+							<div class="text-subtitle-1 font-weight-medium mb-1">
+								cookies.txt is highly recommended
+							</div>
+							<p class="text-body-2 text-medium-emphasis">
+								Without YouTube cookies the server can run into YouTube's bot detection
+								("Sign in to confirm you're not a bot") and videos won't play.
+								To avoid this, add a <code>cookies.txt</code> as described in the README.
+							</p>
+							<v-btn
+								variant="outlined"
+								size="small"
+								class="mt-3 text-high-emphasis"
+								@click="cookiesHelpDialog = true"
+							>
+								How to get the cookies
+							</v-btn>
+						</v-alert>
 						<v-select
 							v-model="prefetchQueueAmount"
 							:items="prefetchOptions"
@@ -207,6 +231,45 @@
 		</v-card>
 	</v-row>
 
+	<v-dialog
+		v-model="cookiesHelpDialog"
+		max-width="640"
+	>
+		<v-card title="How to get the cookies">
+			<v-card-text>
+				<ol class="ml-4">
+					<li class="mb-2">
+						Install a browser extension that exports cookies in Netscape format, for example "Get cookies.txt LOCALLY".
+					</li>
+					<li class="mb-2">
+						Log into YouTube in that browser. A secondary account is safest.
+					</li>
+					<li class="mb-2">
+						Open youtube.com and export the cookies with the extension.
+					</li>
+					<li class="mb-2">
+						Name the file <code>cookies.txt</code> and put it in the server folder: <code>Server/cookies.txt</code>.
+					</li>
+					<li>
+						Reload this page. The server picks up the file without a restart.
+					</li>
+				</ol>
+				<p class="mt-4 text-medium-emphasis">
+					If the bot check comes back later, the cookies have expired. Export them again.
+				</p>
+			</v-card-text>
+			<v-card-actions>
+				<v-spacer />
+				<v-btn
+					variant="text"
+					@click="cookiesHelpDialog = false"
+				>
+					Close
+				</v-btn>
+			</v-card-actions>
+		</v-card>
+	</v-dialog>
+
 	<v-snackbar
 		v-model="snackbar"
 		timeout="3000"
@@ -238,6 +301,7 @@ const useEntireRandomPlaylist = ref(false);
 const selectedVideoQuality = ref(null);
 const prefetchQueueAmount = ref(1);
 const youtubePlaybackMode = ref('stream');
+const cookiesHelpDialog = ref(false);
 const twitchEnabled = ref(false);
 const streamingTitle = ref('');
 const clientID = ref('');
