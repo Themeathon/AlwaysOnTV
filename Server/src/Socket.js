@@ -3,6 +3,7 @@ import HistoryQueue from './queue/HistoryQueue.js';
 import VideoQueue from './queue/VideoQueue.js';
 import VideoDatabase from './db/VideoDatabase.js';
 import pino from '#utils/Pino.js';
+import Config from '#utils/Config.js';
 
 export default class Socket {
 	static {
@@ -15,6 +16,12 @@ export default class Socket {
 	static setup (server) {
 		this.io = new Server(server, {
 			cors: true,
+		});
+
+		this.io.use((socket, next) => {
+			if (Config.isAuthorized(socket.handshake.auth?.password)) return next();
+
+			next(new Error('Unauthorized'));
 		});
 
 		this.io.on('connection', (socket) => {

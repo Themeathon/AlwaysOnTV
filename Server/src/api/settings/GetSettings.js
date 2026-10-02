@@ -9,8 +9,12 @@ class GetSettings extends AbstractEndpoint {
 	}
 
 	async getSettings (ctx, next) {
+		const { password, ...settings } = Config.data;
+
 		return super.success(ctx, next, {
-			...Config.data,
+			...settings,
+			password_enabled: Config.passwordEnabled,
+			password_set: Boolean(password),
 			youtube_cookies: hasCookies(),
 		});
 	}

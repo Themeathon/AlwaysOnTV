@@ -30,6 +30,7 @@ export default class Config {
 	static getDefaultData () {
 		return {
 			password: 'AlwaysOnTV',
+			password_enabled: true,
 			server: {
 				port: 8085,
 				api_url: 'http://localhost:8085/api',
@@ -76,7 +77,32 @@ export default class Config {
 
 	// password
 	static get password () {
-		return this.data.client_secret;
+		return this.data.password;
+	}
+
+	static set password (password) {
+		if (!password) return;
+
+		this.data.password = password;
+
+		this.save();
+	}
+
+	// passwordEnabled
+	static get passwordEnabled () {
+		return this.data.password_enabled ?? true;
+	}
+
+	static set passwordEnabled (password_enabled) {
+		if (password_enabled === undefined) return;
+
+		this.data.password_enabled = password_enabled;
+
+		this.save();
+	}
+
+	static isAuthorized (password) {
+		return !this.passwordEnabled || !this.password || password === this.password;
 	}
 
 	// maxVideoQuality

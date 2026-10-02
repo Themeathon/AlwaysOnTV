@@ -1,5 +1,6 @@
 <template>
 	<v-container
+		v-if="!checking"
 		class="h-100 d-flex flex-column"
 		align="center"
 		justify-content="center"
@@ -48,6 +49,7 @@
 
 <script setup>
 import { auth, isLoading } from '@/ky';
+import { ensureSocketConnected } from '@/socket';
 import { useCookies } from 'vue3-cookies';
 import { onMounted, ref, watch } from 'vue';
 
@@ -56,6 +58,7 @@ const emit = defineEmits(['authenticate']);
 const { cookies } = useCookies();
 
 const passwordField = ref(null);
+const checking = ref(true);
 const password = ref('');
 
 const validPassword = ref(true);
@@ -75,8 +78,10 @@ const tryAuth = async () => {
 		const { authenticated } = await auth.post('').json();
 
 		if (authenticated) {
-			cookies.set('password', cookies.get('password'), '1y');
+			if (cookies.isKey('password'))
+				cookies.set('password', cookies.get('password'), '1y');
 
+			ensureSocketConnected();
 			emit('authenticate');
 		}
 	}
@@ -96,9 +101,21 @@ const tryAuth = async () => {
 };
 
 onMounted(async () => {
-	password.value = cookies.get('password');
-	if (!password.value) return;
+	password.value = cookies.get('password') || '';
 
-	await tryAuth();
+	try {
+		const { authenticated } = await auth.post('').json();
+
+		if (authenticated) {
+			ensureSocketConnected();
+			emit('authenticate');
+			return;
+		}
+	}
+	catch {
+		// Fall through to the login form
+	}
+
+	checking.value = false;
 });
 </script>

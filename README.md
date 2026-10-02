@@ -40,7 +40,7 @@ To start Always On TV, follow these steps:
    ```
    By default, Always On TV starts a web server on port **8085**. You can configure the port in the `Server/config.json` file.
 
-The first time you launch Always On TV, a default configuration will be created. The default password to access the web interface is "AlwaysOnTV," but you can change it in the `config.json` file.
+The first time you launch Always On TV, a default configuration will be created. The default password to access the web interface is "AlwaysOnTV". You can change it, or turn the password off for local use, under Settings > Web Password.
 
 ### Opening the web UI
 

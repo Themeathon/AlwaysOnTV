@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { io } from 'socket.io-client';
+import { useCookies } from 'vue3-cookies';
 
 export const state = reactive({
 	connected: false,
@@ -10,7 +11,13 @@ export const state = reactive({
 // "undefined" means the URL will be computed from the `window.location` object
 const URL = process.env.NODE_ENV === 'production' ? undefined : import.meta.env.VITE_API_URL;
 
-export const socket = io(URL);
+export const socket = io(URL, {
+	auth: cb => cb({ password: useCookies().cookies.get('password') }),
+});
+
+export function ensureSocketConnected () {
+	if (!socket.connected) socket.connect();
+}
 
 export async function asyncEmit (eventName, data) {
 	return new Promise((resolve, reject) => {

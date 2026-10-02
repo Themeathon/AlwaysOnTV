@@ -7,18 +7,13 @@ class TestAuth extends AbstractEndpoint {
 	}
 
 	async testAuth (ctx, next) {
-		const { authorization } = ctx.headers;
-
-		if (!authorization) {
-			return super.error(ctx, 'Incorrect password', 401);
-		}
-
-		if (Config.password && authorization !== Config.password) {
+		if (!Config.isAuthorized(ctx.headers.authorization)) {
 			return super.error(ctx, 'Incorrect password', 401);
 		}
 
 		return super.success(ctx, next, {
 			authenticated: true,
+			password_enabled: Config.passwordEnabled,
 		});
 	}
 }
