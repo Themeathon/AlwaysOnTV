@@ -1,6 +1,8 @@
 import AbstractEndpoint from '../AbstractEndpoint.js';
+import { consumeState, getRedirectURI } from './ConnectTwitch.js';
 
 import Twitch from '#utils/Twitch.js';
+import pino from '#utils/Pino.js';
 
 class AuthCallback extends AbstractEndpoint {
 	setup () {
@@ -8,32 +10,40 @@ class AuthCallback extends AbstractEndpoint {
 	}
 
 	async authCallback (ctx, next) {
-		if (!ctx.session.grant) {
-			return super.error(ctx, 'No session data present');
-		}
+		const { code, state, error, error_description } = ctx.query;
 
-		if (ctx.session.grant.provider !== 'twitch') {
-			return super.error(ctx, 'Not authenticated with Twitch');
-		}
+		let data;
 
-		// it's clearly used below for ctx.body
-		// eslint-disable-next-line no-useless-assignment
-		let data = {};
-
-		try {
-			const { access_token, refresh_token, expires_in } = ctx.session.grant.response.raw;
-
-			await Twitch.updateTwitchData(access_token, refresh_token, expires_in);
-
+		if (error) {
 			data = {
-				status: 200,
-				message: 'Successfully authenticated and updated Twitch information',
+				status: 400,
+				message: error_description || error,
 			};
-		} catch (statusCode) {
+		}
+		else if (!code || !state || !consumeState(state)) {
 			data = {
-				status: statusCode,
-				message: 'There was an error trying to authenticate with Twitch',
+				status: 400,
+				message: 'The Twitch login expired or is invalid, please try again',
 			};
+		}
+		else {
+			try {
+				await Twitch.connectWithCode(code, getRedirectURI(ctx));
+
+				data = {
+					status: 200,
+					message: 'Successfully authenticated and updated Twitch information',
+				};
+			}
+			catch (err) {
+				pino.error('Error in AuthCallback.authCallback');
+				pino.error(err);
+
+				data = {
+					status: err.response?.statusCode || 500,
+					message: 'There was an error trying to authenticate with Twitch',
+				};
+			}
 		}
 
 		ctx.set('Content-Security-Policy', 'default-src *; style-src \'self\' http://* \'unsafe-inline\'; script-src \'self\' http://* \'unsafe-inline\' \'unsafe-eval\'');
@@ -43,10 +53,7 @@ class AuthCallback extends AbstractEndpoint {
 		<html>
 			<head>
 				<script>
-					window.opener.postMessage({
-						status: ${data.status},
-						message: '${data.message}'
-					}, '*');
+					window.opener.postMessage(${JSON.stringify(data).replace(/</g, '\\u003c')}, '*');
 				</script>
 			</head>
 			<body></body>

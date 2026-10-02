@@ -61,15 +61,8 @@ export default class Config {
 		};
 	}
 
-	static async load () {
-		const data = this.db.read();
-
-		const { default: GrantUrismo } = await import('../Grant.js');
-
-		GrantUrismo.twitchClientID = TwitchConfig.clientID;
-		GrantUrismo.twitchClientSecret = TwitchConfig.clientSecret;
-
-		return data;
+	static load () {
+		return this.db.read();
 	}
 
 	static save () {
@@ -223,13 +216,6 @@ export class TwitchConfig {
 		this.save();
 	}
 
-	static async updateGrantConfig () {
-		const { default: GrantUrismo } = await import('../Grant.js');
-
-		GrantUrismo.twitchClientID = this.clientID;
-		GrantUrismo.twitchClientSecret = this.clientSecret;
-	}
-
 	// clientID
 	static get clientID () {
 		return this.config.client_id;
@@ -241,8 +227,6 @@ export class TwitchConfig {
 		this.config.client_id = client_id;
 
 		this.save();
-
-		this.updateGrantConfig();
 	}
 
 	// clientSecret
@@ -256,8 +240,6 @@ export class TwitchConfig {
 		this.config.client_secret = client_secret;
 
 		this.save();
-
-		this.updateGrantConfig();
 	}
 
 	// accessToken
