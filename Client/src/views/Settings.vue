@@ -241,6 +241,24 @@
 						/>
 					</v-card-text>
 				</v-card>
+				<v-divider thickness="3" />
+
+				<v-card variant="flat">
+					<v-card-title>
+						Updates
+					</v-card-title>
+					<v-card-subtitle>
+						Installed version: v{{ settingsData.version }}
+					</v-card-subtitle>
+					<v-card-text>
+						<v-switch
+							v-model="updateCheckEnabled"
+							color="primary"
+							hide-details
+							label="Notify me when a new AlwaysOnTV version is released"
+						/>
+					</v-card-text>
+				</v-card>
 			</v-card-text>
 
 			<v-card-actions>
@@ -321,11 +339,13 @@
 import ky, { isLoading, API_URL } from '@/ky';
 import { onMounted, ref, computed } from 'vue';
 import _ from 'lodash';
+import emitter from '@/event-bus';
 import { useCookies } from 'vue3-cookies';
 
 const settingsData = ref({});
 const passwordEnabled = ref(true);
 const newPassword = ref('');
+const updateCheckEnabled = ref(true);
 const showNewPassword = ref(false);
 
 const { cookies } = useCookies();
@@ -393,6 +413,7 @@ const canSave = computed(() => {
       prefetchQueueAmount.value !== settingsData.value?.prefetch_queue_amount ||
       youtubePlaybackMode.value !== (settingsData.value?.youtube_playback_mode ?? 'stream') ||
       passwordEnabled.value !== (settingsData.value?.password_enabled ?? true) ||
+      updateCheckEnabled.value !== (settingsData.value?.update_check_enabled ?? true) ||
       newPassword.value !== '' ||
       !_.isEqual(currentPaths.sort(), originalPaths.sort());
 });
@@ -419,6 +440,7 @@ const getSettings = async () => {
 		prefetchQueueAmount.value = settingsData.value.prefetch_queue_amount ?? 1;
 		youtubePlaybackMode.value = settingsData.value.youtube_playback_mode ?? 'stream';
 		passwordEnabled.value = settingsData.value.password_enabled ?? true;
+		updateCheckEnabled.value = settingsData.value.update_check_enabled ?? true;
 		newPassword.value = '';
 
 		const loadedPaths = settingsData.value.local_media?.base_paths || [];
@@ -509,6 +531,7 @@ const saveSettings = async () => {
 				youtube_playback_mode: youtubePlaybackMode.value,
 				local_base_paths: pathsToSave,
 				password_enabled: passwordEnabled.value,
+				update_check_enabled: updateCheckEnabled.value,
 				...(newPassword.value && { password: newPassword.value }),
 			},
 		}).json();
@@ -517,6 +540,7 @@ const saveSettings = async () => {
 			cookies.set('password', newPassword.value, '1y');
 
 		await getSettings();
+		emitter.$emit('update_settings_changed');
 		showSnackbar('Successfully updated settings.');
 
 	} catch (error) {

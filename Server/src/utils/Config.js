@@ -54,6 +54,10 @@ export default class Config {
 			use_entire_random_playlist: false,
 			prefetch_queue_amount: 1,
 			youtube_playback_mode: 'stream',
+			update_check: {
+				enabled: true,
+				dismissed_version: '',
+			},
 			local_media: {
 				base_paths: [
 					'',
@@ -165,6 +169,38 @@ export default class Config {
 		if (youtube_playback_mode === undefined) return;
 
 		this.data.youtube_playback_mode = youtube_playback_mode;
+
+		this.save();
+	}
+
+	// Configs from before 2.1.0 have no update_check block
+	static get updateCheck () {
+		this.data.update_check ??= { enabled: true, dismissed_version: '' };
+		return this.data.update_check;
+	}
+
+	// updateCheckEnabled
+	static get updateCheckEnabled () {
+		return this.data.update_check?.enabled ?? true;
+	}
+
+	static set updateCheckEnabled (enabled) {
+		if (enabled === undefined) return;
+
+		this.updateCheck.enabled = enabled;
+
+		this.save();
+	}
+
+	// dismissedUpdateVersion
+	static get dismissedUpdateVersion () {
+		return this.data.update_check?.dismissed_version ?? '';
+	}
+
+	static set dismissedUpdateVersion (version) {
+		if (version === undefined) return;
+
+		this.updateCheck.dismissed_version = version;
 
 		this.save();
 	}

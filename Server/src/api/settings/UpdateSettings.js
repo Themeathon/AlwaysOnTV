@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import Config, {LocalMediaConfig, TwitchConfig} from '#utils/Config.js';
+import UpdateChecker from '#utils/UpdateChecker.js';
 import AbstractEndpoint from '../AbstractEndpoint.js';
 
 class UpdateSettings extends AbstractEndpoint {
@@ -22,6 +23,7 @@ class UpdateSettings extends AbstractEndpoint {
 				local_base_paths: Joi.array().items(Joi.string().allow('')).optional(),
 				password_enabled: Joi.bool(),
 				password: Joi.string().min(1),
+				update_check_enabled: Joi.bool(),
 			}).or(
 				'twitch_enabled',
 				'client_id',
@@ -35,6 +37,7 @@ class UpdateSettings extends AbstractEndpoint {
 				'local_base_paths',
 				'password_enabled',
 				'password',
+				'update_check_enabled',
 			),
 		});
 	}
@@ -54,7 +57,10 @@ class UpdateSettings extends AbstractEndpoint {
 				local_base_paths,
 				password_enabled,
 				password,
+				update_check_enabled,
 			} = ctx.request.body;
+
+			const updateCheckTurnedOn = update_check_enabled === true && !Config.updateCheckEnabled;
 
 			TwitchConfig.isEnabled = twitch_enabled;
 			TwitchConfig.titleReplacement = title_replacement;
@@ -69,6 +75,9 @@ class UpdateSettings extends AbstractEndpoint {
 			LocalMediaConfig.localBasePaths = local_base_paths;
 			Config.password = password;
 			Config.passwordEnabled = password_enabled;
+			Config.updateCheckEnabled = update_check_enabled;
+
+			if (updateCheckTurnedOn) await UpdateChecker.check();
 
 			return super.success(ctx, next, {
 				updated: {
@@ -84,6 +93,7 @@ class UpdateSettings extends AbstractEndpoint {
 					local_base_paths,
 					password_enabled,
 					password_changed: Boolean(password),
+					update_check_enabled,
 				},
 			});
 		}
