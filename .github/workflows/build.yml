@@ -8,16 +8,16 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: '22.x'
+          node-version: '26.x'
 
       - name: Install dependencies and build Client
         run: |
           cd Client
-          npm install
+          npm ci
           npm run build
 
       - name: Copy build output to Server directory
@@ -29,7 +29,7 @@ jobs:
           rm -rf Server/.git*
         
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build
           path: Server
