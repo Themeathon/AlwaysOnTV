@@ -1,6 +1,7 @@
 import AbstractEndpoint from '../AbstractEndpoint.js';
 
 import Config from '#utils/Config.js';
+import { hasCookies } from '#utils/ytdl/Cookies.js';
 
 class GetSettings extends AbstractEndpoint {
 	setup () {
@@ -8,7 +9,10 @@ class GetSettings extends AbstractEndpoint {
 	}
 
 	async getSettings (ctx, next) {
-		return super.success(ctx, next, Config.data);
+		return super.success(ctx, next, {
+			...Config.data,
+			youtube_cookies: hasCookies(),
+		});
 	}
 }
 

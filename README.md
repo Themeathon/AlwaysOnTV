@@ -53,7 +53,7 @@ To access the Always On TV web interface, follow these steps:
 
 YouTube sometimes answers requests from servers with "Sign in to confirm you're not a bot", which stops videos from being added or played. Providing cookies from a logged-in YouTube account avoids this. They are used for video and playlist lookups, DASH streaming and downloads.
 
-1. Install a browser extension that allows exporting cookies in Netscape format (e.g., "Get COOKIES.txt").
+1. Install a browser extension that allows exporting cookies in Netscape format (e.g., "Get cookies.txt LOCALLY").
 2. Log into your YouTube account in that browser and export your active cookies.
 3. Name the exported file exactly as `cookies.txt`.
 4. Place this file directly inside your server component directory at: `/Server/cookies.txt`.
