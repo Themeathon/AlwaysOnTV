@@ -20,6 +20,8 @@ class UpdateSettings extends AbstractEndpoint {
 				prefetch_queue_amount: Joi.number().min(1).max(10),
 				youtube_playback_mode: Joi.string().valid('stream', 'download'),
 				local_base_paths: Joi.array().items(Joi.string().allow('')).optional(),
+				password_enabled: Joi.bool(),
+				password: Joi.string().min(1),
 			}).or(
 				'twitch_enabled',
 				'client_id',
@@ -31,6 +33,8 @@ class UpdateSettings extends AbstractEndpoint {
 				'prefetch_queue_amount',
 				'youtube_playback_mode',
 				'local_base_paths',
+				'password_enabled',
+				'password',
 			),
 		});
 	}
@@ -48,6 +52,8 @@ class UpdateSettings extends AbstractEndpoint {
 				prefetch_queue_amount,
 				youtube_playback_mode,
 				local_base_paths,
+				password_enabled,
+				password,
 			} = ctx.request.body;
 
 			TwitchConfig.isEnabled = twitch_enabled;
@@ -61,6 +67,8 @@ class UpdateSettings extends AbstractEndpoint {
 			Config.prefetchQueueAmount = prefetch_queue_amount;
 			Config.youtubePlaybackMode = youtube_playback_mode;
 			LocalMediaConfig.localBasePaths = local_base_paths;
+			Config.password = password;
+			Config.passwordEnabled = password_enabled;
 
 			return super.success(ctx, next, {
 				updated: {
@@ -74,6 +82,8 @@ class UpdateSettings extends AbstractEndpoint {
 					prefetch_queue_amount,
 					youtube_playback_mode,
 					local_base_paths,
+					password_enabled,
+					password_changed: Boolean(password),
 				},
 			});
 		}
