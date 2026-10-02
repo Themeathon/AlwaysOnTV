@@ -76,13 +76,6 @@ To enable Twitch integration, follow these steps:
 
 Always On TV checks GitHub for a new release on startup and then once every 24 hours. When one is out, the web interface shows a banner linking to the release. "Don't remind me of this update" hides it until the next release. To turn the check off completely, use Settings > Updates.
 
-## Releasing
-
-Versions follow `major.minor.patch`, and release tags must be `v` plus that version (e.g. `v2.1.0`). The update check compares the tag of the latest GitHub release with the installed version, so they have to match.
-
-1. Run `npm run set-version -- 2.1.0` in the project root. It sets the version in the root, Client and Server `package.json` and lock files.
-2. Commit, then publish a GitHub release with the tag `v2.1.0`. Releases marked as pre-release are ignored by the update check.
-
 ## Contributions
 
 Contributions to Always On TV are welcome! If you encounter any issues or have ideas for improvements, please submit an issue or a pull request on the GitHub repository.
