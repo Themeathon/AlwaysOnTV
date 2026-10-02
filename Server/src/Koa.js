@@ -7,9 +7,7 @@ import json from 'koa-json';
 import cors from '@koa/cors';
 import serve from 'koa-static';
 
-import session from 'koa-session';
 import mount from 'koa-mount';
-import GrantUrismo from './Grant.js';
 
 import Socket from './Socket.js';
 import path from 'node:path';
@@ -73,10 +71,6 @@ async function setupKoa () {
 		ctx.set('Content-Type', 'text/html');
 		ctx.body = await readFile('./public/index.html', 'utf-8');
 	});
-
-	app.keys = ['grant_alwaysontv'];
-	app.use(session(app));
-	app.use(mount(GrantUrismo.middleware));
 
 	app.proxy = true;
 

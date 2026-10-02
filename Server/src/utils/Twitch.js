@@ -54,6 +54,23 @@ class Twitch {
 		TwitchConfig.data = await this.getTwitchInfo(access_token);
 	}
 
+	async connectWithCode (code, redirect_uri) {
+		const url = new URL('https://id.twitch.tv/oauth2/token');
+		url.searchParams.set('grant_type', 'authorization_code');
+		url.searchParams.set('code', code);
+		url.searchParams.set('redirect_uri', redirect_uri);
+		url.searchParams.set('client_id', TwitchConfig.clientID);
+		url.searchParams.set('client_secret', TwitchConfig.clientSecret);
+
+		const { access_token, refresh_token, expires_in } = await Utils.postAsJSON(url, {
+			headers: {
+				'Client-ID': TwitchConfig.clientID,
+			},
+		});
+
+		await this.updateTwitchData(access_token, refresh_token, expires_in);
+	}
+
 	async getAccessToken (force_renew = false) {
 		if (
 			!TwitchConfig.refreshToken ||
