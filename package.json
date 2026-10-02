@@ -1,6 +1,6 @@
 {
   "name": "alwaysontv-root",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "Installer script for Always On TV",
   "scripts": {
     "install-all": "npm run install:client && npm run install:server",
@@ -9,7 +9,8 @@
     "build:client": "cd Client && npm run build",
     "deploy:client": "npm run build:client && node scripts/deploy-client.js",
     "setup": "npm run install-all && npm run deploy:client",
-    "start": "cd Server && npm start"
+    "start": "cd Server && npm start",
+    "set-version": "node scripts/set-version.js"
   },
   "author": "AlwaysOnTV",
   "license": "MIT"

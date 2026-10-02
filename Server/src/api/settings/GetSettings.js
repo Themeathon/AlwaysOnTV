@@ -2,6 +2,7 @@ import AbstractEndpoint from '../AbstractEndpoint.js';
 
 import Config from '#utils/Config.js';
 import { hasCookies } from '#utils/ytdl/Cookies.js';
+import UpdateChecker from '#utils/UpdateChecker.js';
 
 class GetSettings extends AbstractEndpoint {
 	setup () {
@@ -16,6 +17,8 @@ class GetSettings extends AbstractEndpoint {
 			password_enabled: Config.passwordEnabled,
 			password_set: Boolean(password),
 			youtube_cookies: hasCookies(),
+			update_check_enabled: Config.updateCheckEnabled,
+			version: UpdateChecker.currentVersion,
 		});
 	}
 }

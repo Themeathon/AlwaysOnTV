@@ -7,6 +7,7 @@
 		<template v-else>
 			<Navbar />
 			<v-main>
+				<UpdateBanner v-if="route.name !== 'video-player'" />
 				<router-view />
 			</v-main>
 			<Footer v-if="route.name !== 'video-player'" />
@@ -22,6 +23,7 @@ import emitter from '@/event-bus';
 import Authorization from '@/components/Authorization.vue';
 import Navbar from '@/components/Navbar.vue';
 import Footer from '@/components/Footer.vue';
+import UpdateBanner from '@/components/UpdateBanner.vue';
 
 const route = useRoute();
 

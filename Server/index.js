@@ -1,6 +1,7 @@
 import { initializeDatabase } from './src/db/index.js';
 import setupKoa from './src/Koa.js';
 import Config from './src/utils/Config.js';
+import UpdateChecker from './src/utils/UpdateChecker.js';
 
 async function start () {
 	// Initialize config
@@ -9,6 +10,8 @@ async function start () {
 	await initializeDatabase();
 
 	await setupKoa();
+
+	UpdateChecker.start();
 
 	// Initialize queue and history
 	await import('./src/queue/VideoQueue.js');
